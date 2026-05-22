@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./alerts.module.css";
 
 const alerts = [
   ["High", "Payroll file missing for Vodafone"],

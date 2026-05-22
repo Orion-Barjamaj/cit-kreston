@@ -88,9 +88,6 @@ export default function WorkspaceShell({
       </aside>
 
       <div className={styles.contentArea}>
-        <header className={styles.topbar}>
-        </header>
-
         <main className={styles.main}>{children}</main>
       </div>
     </div>

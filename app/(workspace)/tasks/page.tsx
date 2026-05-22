@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import styles from "../workspace.module.css";
+import styles from "./tasks.module.css";
 
 type Task = {
   id: string;

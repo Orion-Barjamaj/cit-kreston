@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./calendar.module.css";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const events = [

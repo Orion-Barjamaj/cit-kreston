@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./settings.module.css";
 
 export default function SettingsPage() {
   return (

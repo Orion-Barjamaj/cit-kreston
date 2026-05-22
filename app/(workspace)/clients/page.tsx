@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import styles from "../workspace.module.css";
+import styles from "./clients.module.css";
 import ClientsView from "./clients-view";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 

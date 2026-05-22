@@ -1,0 +1,55 @@
+.pageStack {
+  composes: pageStack from "../workspace.module.css";
+}
+
+.pageHeader {
+  composes: pageHeader from "../workspace.module.css";
+}
+
+.eyebrow {
+  composes: eyebrow from "../workspace.module.css";
+}
+
+.twoColumn {
+  composes: twoColumn from "../workspace.module.css";
+}
+
+.panel {
+  composes: panel from "../workspace.module.css";
+}
+
+.primaryButton {
+  composes: primaryButton from "../workspace.module.css";
+}
+
+.formStack {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.formStack label {
+  display: grid;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.formStack input {
+  min-height: 36px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0;
+}

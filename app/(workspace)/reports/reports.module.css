@@ -1,0 +1,62 @@
+.pageStack {
+  composes: pageStack from "../workspace.module.css";
+}
+
+.pageHeader {
+  composes: pageHeader from "../workspace.module.css";
+}
+
+.eyebrow {
+  composes: eyebrow from "../workspace.module.css";
+}
+
+.panel {
+  composes: panel from "../workspace.module.css";
+}
+
+.statsGrid {
+  composes: statsGrid from "../workspace.module.css";
+}
+
+.statCard {
+  composes: statCard from "../workspace.module.css";
+}
+
+.aiBox {
+  max-width: 260px;
+  padding: 14px 16px;
+  color: #0f5132;
+  background: #eefaf3;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.progressList {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.progressList span {
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .progressList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .progressList {
+    grid-template-columns: 1fr;
+  }
+}

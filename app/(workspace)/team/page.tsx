@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./team.module.css";
 
 const members = [
   ["Arber M.", "Manager", "Audit", "78%", "Available"],

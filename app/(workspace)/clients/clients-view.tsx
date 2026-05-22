@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import styles from "../workspace.module.css";
+import styles from "./clients.module.css";
 import type { ClientRecord } from "@/app/lib/supabase";
 
 type ClientsViewProps = {
@@ -52,7 +52,33 @@ function getSearchText(client: ClientRecord) {
     .toLowerCase();
 }
 
-export default function ClientsView({ clients, error, isConfigured }: ClientsViewProps) {
+function getClientStatus(client: ClientRecord) {
+  return client.status?.trim() || "active";
+}
+
+function getStatusClassName(status: string) {
+  const normalizedStatus = status.toLowerCase();
+
+  if (normalizedStatus === "active") {
+    return `${styles.statusTag} ${styles.statusActive}`;
+  }
+
+  if (normalizedStatus === "delayed") {
+    return `${styles.statusTag} ${styles.statusDelayed}`;
+  }
+
+  if (normalizedStatus === "onboarding") {
+    return `${styles.statusTag} ${styles.statusOnboarding}`;
+  }
+
+  return styles.statusTag;
+}
+
+export default function ClientsView({
+  clients,
+  error,
+  isConfigured,
+}: ClientsViewProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const filteredClients = useMemo(() => {
@@ -60,14 +86,17 @@ export default function ClientsView({ clients, error, isConfigured }: ClientsVie
       return clients;
     }
 
-    return clients.filter((client) => getSearchText(client).includes(normalizedSearchTerm));
+    return clients.filter((client) =>
+      getSearchText(client).includes(normalizedSearchTerm),
+    );
   }, [clients, normalizedSearchTerm]);
 
   return (
     <>
       {!isConfigured ? (
         <div className={styles.noticeBox}>
-          Add your Supabase URL and anon key to <code>.env</code> to load clients from the database.
+          Add your Supabase URL and anon key to <code>.env</code> to load
+          clients from the database.
         </div>
       ) : null}
 
@@ -96,30 +125,44 @@ export default function ClientsView({ clients, error, isConfigured }: ClientsVie
           </thead>
           <tbody>
             {filteredClients.length > 0 ? (
-              filteredClients.map((client) => (
-                <tr key={client.id}>
-                  <td>
-                    <Link className={styles.tableLink} href={`/clients/${client.id}`}>
-                      {client.name}
-                    </Link>
-                  </td>
-                  <td>{formatField(client.industry)}</td>
-                  <td>
-                    <span className={styles.statusTag}>{client.status ?? "active"}</span>
-                  </td>
-                  <td>{formatField(client.assigned_manager_id)}</td>
-                  <td>{formatDate(client.created_at)}</td>
-                  <td>
-                    <Link className={styles.textButton} href={`/clients/${client.id}`}>
-                      Open file
-                    </Link>
-                  </td>
-                </tr>
-              ))
+              filteredClients.map((client) => {
+                const status = getClientStatus(client);
+
+                return (
+                  <tr key={client.id}>
+                    <td>
+                      <Link
+                        className={styles.tableLink}
+                        href={`/clients/${client.id}`}
+                      >
+                        {client.name}
+                      </Link>
+                    </td>
+                    <td>{formatField(client.industry)}</td>
+                    <td>
+                      <span className={getStatusClassName(status)}>
+                        {status}
+                      </span>
+                    </td>
+                    <td>{formatField(client.assigned_manager_id)}</td>
+                    <td>{formatDate(client.created_at)}</td>
+                    <td>
+                      <Link
+                        className={styles.textButton}
+                        href={`/clients/${client.id}`}
+                      >
+                        Open file
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={6}>
-                  {normalizedSearchTerm ? `No clients match "${searchTerm}".` : "No clients found."}
+                  {normalizedSearchTerm
+                    ? `No clients match "${searchTerm}".`
+                    : "No clients found."}
                 </td>
               </tr>
             )}

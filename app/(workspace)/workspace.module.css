@@ -11,10 +11,9 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e6e6e6;
   padding: 20px 16px 24px;
-  background: #ffffff;
   overflow: hidden;
+  background-color: #F5F5F4;
   z-index: 20;
 }
 
@@ -189,6 +188,7 @@
 }
 
 .contentArea {
+  padding: 16px;
   margin-left: 240px;
   min-width: 0;
   display: flex;
@@ -326,7 +326,8 @@
 
 .main {
   flex: 1;
-  min-height: calc(100vh - 66px);
+  border-radius: 32px;
+  min-height: 100vh;
   padding: 36px 34px;
   background: #ffffff;
 }
@@ -584,6 +585,21 @@
 .statusCompleted {
   background: #6fa1f2;
   color: #0f2f66;
+}
+
+.statusActive {
+  background: #a8efad;
+  color: #103c19;
+}
+
+.statusDelayed {
+  background: #ffd4a3 !important;
+  color: #7a3a00 !important;
+}
+
+.statusOnboarding {
+    background: #3B82F6 !important;
+  color: #fff !important;
 }
 
 .weekStrip {

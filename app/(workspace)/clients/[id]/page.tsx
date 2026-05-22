@@ -1,40 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import styles from "../../workspace.module.css";
+import styles from "../clients.module.css";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
 type ClientPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const statusItems = [
-  { department: "Audit", status: "In Progress", progress: 62 },
-  { department: "Payroll", status: "Review", progress: 78 },
-  { department: "Tax", status: "Completed", progress: 100 },
-  { department: "Legal", status: "Waiting Documents", progress: 36 },
-];
-
 const tasks = [
-  ["Review payroll docs", "Sara", "Review", "Tomorrow"],
-  ["Audit preparation", "Andi", "In Progress", "Friday"],
-  ["Submit tax forms", "Arber", "Done", "-"],
-  ["Request legal documents", "Kejsi", "To Do", "May 28"],
+  ["Review payroll documents", "Sara", "Review", "Tomorrow"],
+  ["Prepare audit checklist", "Andi", "In Progress", "Friday"],
+  ["Confirm tax declaration", "Arber", "Pending", "May 28"],
 ];
 
 const timeline = [
-  ["May 20", "Client onboarded"],
-  ["May 21", "Audit task created"],
-  ["May 22", "Payroll docs uploaded"],
-  ["May 23", "Tax review completed"],
+  ["May 20", "Contract signed"],
+  ["May 21", "Documents uploaded"],
+  ["May 22", "Payroll files checked"],
+  ["May 23", "Review pending"],
 ];
 
-const documents = ["payroll_may.pdf", "audit_report.docx", "tax_forms.xlsx"];
-
-const notes = [
-  ["Arber", "Client requested updated payroll report."],
-  ["Kejsi", "Waiting for audit approval."],
-];
+const documents = ["signed_contract.pdf", "company_extract.pdf", "payroll_may.xlsx"];
+const notes = ["Waiting for manager approval.", "Client asked for a May 28 follow-up."];
 
 async function getClient(id: string) {
   await connection();
@@ -103,80 +91,34 @@ export default async function ClientPage({ params }: ClientPageProps) {
         Back to clients
       </Link>
 
-      <header className={styles.clientHero}>
-        <div>
-          <p className={styles.eyebrow}>Client file</p>
-          <h2>{client.name}</h2>
-          <p>
-            {status} client
-            {client.industry ? ` · ${client.industry}` : ""} · Managed by: {managerName(client)}
-          </p>
-        </div>
-
-        <div className={styles.clientHeroAside}>
-          <span>Next Deadline: Tomorrow</span>
-          <strong>Status: {status}</strong>
-          <div className={styles.actionRow}>
-            <button className={styles.primaryButton} type="button">
-              + Add Task
-            </button>
-            <button className={styles.secondaryButton} type="button">
-              + Upload Document
-            </button>
-            <button className={styles.secondaryButton} type="button">
-              + Add Note
-            </button>
+      <article className={styles.panel}>
+        <p className={styles.eyebrow}>Client overview</p>
+        <h2>{client.name}</h2>
+        <dl className={styles.detailGrid}>
+          <div>
+            <dt>Name</dt>
+            <dd>{client.name}</dd>
           </div>
-        </div>
-      </header>
-
-      <div className={styles.statsGrid}>
-        {[
-          ["Tasks Active", "12"],
-          ["Completed", "34"],
-          ["Overdue", "2"],
-          ["Departments", "4"],
-        ].map(([label, value]) => (
-          <article className={styles.statCard} key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-            <small>{client.name}</small>
-          </article>
-        ))}
-      </div>
-
-      <section className={styles.twoColumnWide}>
-        <article className={styles.panel}>
-          <h3>Department Status</h3>
-          <div className={styles.departmentList}>
-            {statusItems.map((item) => (
-              <div className={styles.departmentItem} key={item.department}>
-                <div>
-                  <strong>{item.department}</strong>
-                  <span className={styles.statusTag}>{item.status}</span>
-                </div>
-                <div className={styles.progressBar}>
-                  <span style={{ width: `${item.progress}%` }} />
-                </div>
-              </div>
-            ))}
+          <div>
+            <dt>Industry</dt>
+            <dd>{client.industry ?? "Not assigned"}</dd>
           </div>
-        </article>
-
-        <article className={styles.aiSummary}>
-          <h3>AI Summary</h3>
-          <ul className={styles.cleanList}>
-            <li>Payroll delayed by 2 days</li>
-            <li>Missing tax documents</li>
-            <li>Audit progressing normally</li>
-            <li>Follow-up recommended</li>
-          </ul>
-        </article>
-      </section>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span className={styles.statusTag}>{status}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Manager</dt>
+            <dd>{managerName(client)}</dd>
+          </div>
+        </dl>
+      </article>
 
       <article className={styles.panel}>
         <div className={styles.clientFileHeader}>
-          <h3>Tasks</h3>
+          <h3>Tasks for this client</h3>
           <button className={styles.textButton} type="button">
             Add task
           </button>
@@ -227,36 +169,27 @@ export default async function ClientPage({ params }: ClientPageProps) {
         </article>
 
         <article className={styles.panel}>
-          <h3>Documents</h3>
+          <h3>Documents & Notes</h3>
           <ul className={styles.documentList}>
             {documents.map((document) => (
               <li key={document}>
                 <span>{document}</span>
                 <button className={styles.textButton} type="button">
-                  Preview
+                  Open
                 </button>
               </li>
             ))}
           </ul>
+          <div className={styles.noteList}>
+            {notes.map((note) => (
+              <div key={note}>
+                <strong>Note</strong>
+                <p>{note}</p>
+              </div>
+            ))}
+          </div>
         </article>
       </section>
-
-      <article className={styles.panel}>
-        <div className={styles.clientFileHeader}>
-          <h3>Notes</h3>
-          <button className={styles.textButton} type="button">
-            Add note
-          </button>
-        </div>
-        <div className={styles.noteList}>
-          {notes.map(([author, note]) => (
-            <div key={`${author}-${note}`}>
-              <strong>{author}</strong>
-              <p>{note}</p>
-            </div>
-          ))}
-        </div>
-      </article>
     </section>
   );
 }

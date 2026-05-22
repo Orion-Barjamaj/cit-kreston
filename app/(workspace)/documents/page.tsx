@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./documents.module.css";
 
 const documents = [
   ["Payroll May.xlsx", "Payroll file", "Vodafone Albania", "May 21", "Current"],

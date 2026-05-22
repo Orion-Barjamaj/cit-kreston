@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./help.module.css";
 
 const faqs = [
   "How do I create a task?",

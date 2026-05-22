@@ -1,0 +1,305 @@
+.pageStack {
+  composes: pageStack from "../workspace.module.css";
+}
+
+.pageHeader {
+  composes: pageHeader from "../workspace.module.css";
+}
+
+.eyebrow {
+  composes: eyebrow from "../workspace.module.css";
+}
+
+.selectControl {
+  composes: selectControl from "../workspace.module.css";
+}
+
+.noticeBox {
+  composes: noticeBox from "../workspace.module.css";
+}
+
+.errorBox {
+  composes: errorBox from "../workspace.module.css";
+}
+
+.tableWrap {
+  composes: tableWrap from "../workspace.module.css";
+}
+
+.dataTable {
+  composes: dataTable from "../workspace.module.css";
+}
+
+.tableLink {
+  composes: tableLink from "../workspace.module.css";
+}
+
+.textButton {
+  composes: textButton from "../workspace.module.css";
+}
+
+.primaryButton {
+  composes: primaryButton from "../workspace.module.css";
+}
+
+.secondaryButton {
+  composes: secondaryButton from "../workspace.module.css";
+}
+
+.statsGrid {
+  composes: statsGrid from "../workspace.module.css";
+}
+
+.statCard {
+  composes: statCard from "../workspace.module.css";
+}
+
+.twoColumn,
+.twoColumnWide {
+  composes: twoColumn from "../workspace.module.css";
+}
+
+.twoColumnWide {
+  composes: twoColumnWide from "../workspace.module.css";
+}
+
+.panel {
+  composes: panel from "../workspace.module.css";
+}
+
+.cleanList {
+  composes: cleanList from "../workspace.module.css";
+}
+
+.statusTag {
+  composes: statusTag from "../workspace.module.css";
+}
+
+.fullSearch {
+  composes: fullSearch from "../workspace.module.css";
+}
+
+.statusActive {
+  background: #a8efad;
+  color: #103c19;
+}
+
+.statusDelayed {
+  background: #ffd4a3;
+  color: #7a3a00;
+}
+
+.statusOnboarding {
+  background: #c8ddff;
+  color: #143f86;
+}
+
+.clientHero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 22px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+}
+
+.clientHero h2 {
+  margin-top: 6px;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.1;
+}
+
+.clientHero p {
+  margin-top: 10px;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.clientHeroAside {
+  min-width: 330px;
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: 10px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.clientHeroAside strong {
+  color: #111827;
+  font-size: 15px;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.clientFileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.detailGrid div {
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.detailGrid dt {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detailGrid dd {
+  margin-top: 6px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.departmentList,
+.documentList,
+.noteList,
+.timelineList {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.departmentItem {
+  display: grid;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.departmentItem > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.departmentItem strong {
+  font-size: 14px;
+}
+
+.progressBar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.progressBar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1168c8;
+}
+
+.aiSummary {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 16px;
+  background: #eff6ff;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.04);
+}
+
+.aiSummary h3 {
+  color: #0f3f7a;
+  font-size: 15px;
+}
+
+.timelineList {
+  list-style: none;
+}
+
+.timelineList li,
+.documentList li,
+.noteList div {
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.timelineList li,
+.documentList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.timelineList time {
+  color: #1168c8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.timelineList span,
+.documentList span {
+  color: #374151;
+  font-size: 14px;
+}
+
+.documentList {
+  list-style: none;
+}
+
+.documentList span {
+  font-weight: 700;
+}
+
+.noteList strong {
+  font-size: 13px;
+}
+
+.noteList p {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+@media (max-width: 980px) {
+  .clientHero {
+    grid-template-columns: 1fr;
+  }
+
+  .clientHeroAside {
+    min-width: 0;
+    justify-items: start;
+  }
+
+  .actionRow {
+    justify-content: flex-start;
+  }
+
+  .detailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}

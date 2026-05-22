@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./reports.module.css";
 
 const reportCards = [
   ["Total active clients", "42"],

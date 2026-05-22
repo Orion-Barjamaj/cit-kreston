@@ -1,4 +1,4 @@
-import styles from "../workspace.module.css";
+import styles from "./dashboard.module.css";
 
 const metrics = [
   { label: "Hours Saved", value: "12hrs" },
