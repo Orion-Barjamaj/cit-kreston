@@ -1,13 +1,10 @@
 .pageStack {
   composes: pageStack from "../workspace.module.css";
+  gap: 14px;
 }
 
 .panel {
   composes: panel from "../workspace.module.css";
-}
-
-.twoColumn {
-  composes: twoColumn from "../workspace.module.css";
 }
 
 .selectControl {
@@ -38,18 +35,18 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 18px;
 }
 
 .dashboardHero time {
   color: #5e5e5e;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .dashboardHero h2 {
-  margin-top: 12px;
+  margin-top: 8px;
   color: #111111;
-  font-size: clamp(34px, 4vw, 42px);
+  font-size: clamp(28px, 3.4vw, 36px);
   line-height: 1.06;
   font-weight: 600;
   letter-spacing: 0;
@@ -59,7 +56,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: 26px;
+  padding-top: 18px;
 }
 
 .metricPill {
@@ -75,12 +72,12 @@
 }
 
 .metricPill span {
-  min-height: 48px;
+  min-height: 42px;
   display: flex;
   align-items: center;
   gap: 8px;
   border-right: 1px solid #dedede;
-  padding: 0 22px;
+  padding: 0 20px;
   color: #424242;
   font-size: 13px;
 }
@@ -94,6 +91,50 @@
   font-size: 18px;
 }
 
+.managerGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.activityFeed,
+.workloadList {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.activityFeed {
+  list-style: none;
+}
+
+.activityFeed li,
+.workloadList div {
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workloadList div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workloadList span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.workloadList strong {
+  color: #111827;
+  font-size: 16px;
+}
+
 .projectPanel {
   overflow: hidden;
   border: 1px solid #dedede;
@@ -102,12 +143,12 @@
 }
 
 .panelToolbar {
-  min-height: 64px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid #ededed;
-  padding: 0 18px;
+  padding: 0 16px;
 }
 
 .panelToolbar h3 {
@@ -123,6 +164,11 @@
 .projectPanel .tableWrap {
   border: 0;
   border-radius: 0;
+}
+
+.projectPanel .dataTable th,
+.projectPanel .dataTable td {
+  padding: 11px 16px;
 }
 
 .projectPanel .dataTable th + th,
@@ -141,7 +187,7 @@
 
 .taskMeta {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: #6b6b6b;
   font-size: 12px;
   font-weight: 400;
@@ -173,264 +219,6 @@
 .statusCompleted {
   background: #6fa1f2;
   color: #0f2f66;
-}
-
-.managerGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.activityFeed,
-.workloadList {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.activityFeed {
-  list-style: none;
-}
-
-.activityFeed li,
-.workloadList div {
-  border-radius: 8px;
-  padding: 12px;
-  background: #f8fafc;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.workloadList div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.workloadList span {
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.workloadList strong {
-  color: #111827;
-  font-size: 16px;
-}
-
-.scheduleControls {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #6b7280;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.scheduleArrow {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #d7def0;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #1d4ed8;
-  cursor: pointer;
-  position: relative;
-  transition: border-color 160ms ease, background 160ms ease;
-}
-
-.scheduleArrow::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-top: 2px solid #1d4ed8;
-  border-right: 2px solid #1d4ed8;
-}
-
-.previousArrow::before {
-  margin-left: 3px;
-  transform: rotate(-135deg);
-}
-
-.nextArrow::before {
-  margin-right: 3px;
-  transform: rotate(45deg);
-}
-
-.scheduleArrow:hover:not(:disabled) {
-  border-color: #2f66e8;
-  background: #f8fafc;
-}
-
-.scheduleArrow:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-.scheduleControls > span {
-  min-width: 112px;
-  text-align: center;
-}
-
-.weekStrip {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
-  border-bottom: 1px solid #ededed;
-  padding: 14px 0 18px;
-}
-
-.weekStrip button {
-  min-height: 44px;
-  display: grid;
-  gap: 2px;
-  place-items: center;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #111111;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.weekStrip button span {
-  color: #6b7280;
-  font-size: 11px;
-}
-
-.weekStrip button strong {
-  font-size: 13px;
-}
-
-.currentDay {
-  background: #9ab1e7 !important;
-}
-
-.selectedDayInfo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #ededed;
-  padding: 12px 0;
-}
-
-.selectedDayInfo strong {
-  color: #111111;
-  font-size: 13px;
-}
-
-.selectedDayInfo span {
-  color: #6b7280;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.scheduleList,
-.noteChecklist {
-  display: grid;
-  list-style: none;
-}
-
-.scheduleList li {
-  display: grid;
-  gap: 6px;
-  border-bottom: 1px dashed #e6e6e6;
-  padding: 18px 0 18px 18px;
-  position: relative;
-}
-
-.scheduleList li:last-child,
-.noteChecklist li:last-child {
-  border-bottom: 0;
-}
-
-.scheduleList li::before {
-  content: "";
-  position: absolute;
-  inset: 18px auto 18px 0;
-  width: 3px;
-  border-radius: 999px;
-  background: #2f66e8;
-}
-
-.schedulegreen::before {
-  background: #8ce99a !important;
-}
-
-.scheduleblue::before {
-  background: #2f66e8 !important;
-}
-
-.schedulepink::before {
-  background: #e694ed !important;
-}
-
-.scheduleList strong {
-  color: #111111;
-  font-size: 13px;
-}
-
-.scheduleList span {
-  color: #5e5e5e;
-  font-size: 12px;
-}
-
-.scheduleList small {
-  color: #374151;
-  font-size: 12px;
-}
-
-.emptySchedule::before {
-  background: #d1d5db !important;
-}
-
-.noteChecklist {
-  margin-top: 10px;
-}
-
-.noteChecklist li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  border-bottom: 1px dashed #e6e6e6;
-  padding: 16px 0;
-}
-
-.noteChecklist li > span {
-  width: 20px;
-  height: 20px;
-  margin-top: 2px;
-  border: 1.5px solid #999999;
-  border-radius: 999px;
-}
-
-.noteChecklist strong {
-  color: #111111;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.noteChecklist p {
-  margin-top: 6px;
-  color: #424242;
-  font-size: 12px;
-}
-
-.noteDone > span {
-  border-color: #e694ed !important;
-  background: #e694ed;
-}
-
-.noteDone strong {
-  color: #5e5e5e;
-  text-decoration: line-through;
 }
 
 @media (max-width: 980px) {
@@ -471,9 +259,5 @@
   .panelToolbar {
     flex-wrap: wrap;
     padding: 14px;
-  }
-
-  .weekStrip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

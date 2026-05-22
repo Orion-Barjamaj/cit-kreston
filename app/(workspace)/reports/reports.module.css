@@ -14,6 +14,10 @@
   composes: panel from "../workspace.module.css";
 }
 
+.twoColumn {
+  composes: twoColumn from "../workspace.module.css";
+}
+
 .statsGrid {
   composes: statsGrid from "../workspace.module.css";
 }
@@ -49,6 +53,221 @@
   font-weight: 700;
 }
 
+.panelToolbar {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #ededed;
+  margin: -18px -18px 0;
+  padding: 0 16px;
+}
+
+.panelToolbar h3 {
+  color: #111827;
+  font-size: 18px;
+}
+
+.scheduleControls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.scheduleArrow {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d7def0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.scheduleArrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #1d4ed8;
+  border-right: 2px solid #1d4ed8;
+}
+
+.previousArrow::before {
+  margin-left: 3px;
+  transform: rotate(-135deg);
+}
+
+.nextArrow::before {
+  margin-right: 3px;
+  transform: rotate(45deg);
+}
+
+.scheduleArrow:hover:not(:disabled) {
+  border-color: #2f66e8;
+  background: #f8fafc;
+}
+
+.scheduleArrow:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.scheduleControls > span {
+  min-width: 112px;
+  text-align: center;
+}
+
+.weekStrip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  border-bottom: 1px solid #ededed;
+  padding: 14px 0 18px;
+}
+
+.weekStrip button {
+  min-height: 44px;
+  display: grid;
+  gap: 2px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #111111;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.weekStrip button span {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.weekStrip button strong {
+  font-size: 13px;
+}
+
+.currentDay {
+  background: #dbeafe !important;
+}
+
+.selectedDayInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #ededed;
+  padding: 12px 0;
+}
+
+.selectedDayInfo strong {
+  color: #111111;
+  font-size: 13px;
+}
+
+.selectedDayInfo span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.scheduleList,
+.noteChecklist {
+  display: grid;
+  list-style: none;
+}
+
+.scheduleList li {
+  display: grid;
+  gap: 6px;
+  border-bottom: 1px dashed #e6e6e6;
+  padding: 18px 0 18px 18px;
+  position: relative;
+}
+
+.scheduleList li:last-child,
+.noteChecklist li:last-child {
+  border-bottom: 0;
+}
+
+.scheduleList li::before {
+  content: "";
+  position: absolute;
+  inset: 18px auto 18px 0;
+  width: 3px;
+  border-radius: 999px;
+  background: #2f66e8;
+}
+
+.schedulegreen::before {
+  background: #8ce99a !important;
+}
+
+.scheduleblue::before {
+  background: #2f66e8 !important;
+}
+
+.schedulepink::before {
+  background: #e694ed !important;
+}
+
+.scheduleList strong,
+.noteChecklist strong {
+  color: #111111;
+  font-size: 13px;
+}
+
+.scheduleList span,
+.scheduleList small,
+.noteChecklist p {
+  color: #5e5e5e;
+  font-size: 12px;
+}
+
+.emptySchedule::before {
+  background: #d1d5db !important;
+}
+
+.noteChecklist {
+  margin-top: 10px;
+}
+
+.noteChecklist li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  border-bottom: 1px dashed #e6e6e6;
+  padding: 16px 0;
+}
+
+.noteChecklist li > span {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 1.5px solid #999999;
+  border-radius: 999px;
+}
+
+.noteDone > span {
+  border-color: #e694ed !important;
+  background: #e694ed;
+}
+
+.noteDone strong {
+  color: #5e5e5e;
+  text-decoration: line-through;
+}
+
 @media (max-width: 980px) {
   .progressList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -58,5 +277,9 @@
 @media (max-width: 560px) {
   .progressList {
     grid-template-columns: 1fr;
+  }
+
+  .weekStrip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

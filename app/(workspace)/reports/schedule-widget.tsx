@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import styles from "./dashboard.module.css";
+import styles from "./reports.module.css";
 
 type ScheduleItem = {
   title: string;
@@ -34,7 +34,6 @@ const weeks: DaySchedule[][] = [
       items: [
         { title: "Kickoff Meeting", time: "01:00 PM to 02:30 PM", detail: "Internal audit planning", accent: "green" },
         { title: "Create audit report draft", time: "04:00 PM to 05:30 PM", detail: "Balfin Group", accent: "blue" },
-        { title: "Create client handoff notes", time: "05:00 PM to 06:30 PM", detail: "Vodafone payroll", accent: "pink" },
       ],
     },
     {

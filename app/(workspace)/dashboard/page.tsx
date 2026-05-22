@@ -1,5 +1,4 @@
 import styles from "./dashboard.module.css";
-import ScheduleWidget from "./schedule-widget";
 
 const metrics = [
   { label: "Overdue Tasks", value: "3" },
@@ -43,24 +42,6 @@ const projects = [
     assignee: "Lukas Juarez",
     initials: "LJ",
     status: "Completed",
-  },
-];
-
-const notes = [
-  {
-    title: "Landing Page For Website",
-    body: "Confirm scope, content owner, and delivery timeline before work starts.",
-    done: false,
-  },
-  {
-    title: "Fixing icons with dark backgrounds",
-    body: "Use recognizable icons with strong contrast and simple shapes.",
-    done: false,
-  },
-  {
-    title: "Discussion regarding userflow improvement",
-    body: "Clarify the main goal of the workflow before changing screens.",
-    done: true,
   },
 ];
 
@@ -162,24 +143,6 @@ export default function DashboardPage() {
         </div>
       </article>
 
-      <div className={styles.twoColumn}>
-        <ScheduleWidget />
-
-        <article className={styles.panel}>
-          <h3>Notes</h3>
-          <ul className={styles.noteChecklist}>
-            {notes.map((note) => (
-              <li className={note.done ? styles.noteDone : ""} key={note.title}>
-                <span aria-hidden="true" />
-                <div>
-                  <strong>{note.title}</strong>
-                  <p>{note.body}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </article>
-      </div>
     </section>
   );
 }
