@@ -124,12 +124,13 @@
 }
 
 .kanban {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 1fr));
   min-height: 660px;
-  border-top: 1px solid #d9dee7;
-  border-bottom: 1px solid #d9dee7;
-  overflow-x: auto;
+  padding: 0 28px 28px;
+  overflow-x: clip;
+  overscroll-behavior-x: contain;
   background: linear-gradient(90deg, #ffffff 0%, #fbfcfd 100%);
 }
 
@@ -137,7 +138,9 @@
   min-width: 260px;
   display: flex;
   flex-direction: column;
+  border-top: 1px solid #d9dee7;
   border-right: 1px solid #d9dee7;
+  border-bottom: 1px solid #d9dee7;
   background: #fbfcfd;
   transition: background-color 160ms ease, box-shadow 160ms ease;
 }
@@ -152,7 +155,7 @@
 }
 
 .kanbanColumn:last-child {
-  border-right: 0;
+  border-right: 1px solid #d9dee7;
 }
 
 .columnHeader {
@@ -443,6 +446,8 @@
 
   .kanban {
     grid-template-columns: repeat(3, minmax(240px, 1fr));
+    padding: 0 28px 28px;
+    overflow-x: auto;
   }
 }
 
@@ -464,6 +469,10 @@
 
   .modalGrid {
     grid-template-columns: 1fr;
+  }
+
+  .kanban {
+    padding: 0 14px 20px;
   }
 
 }

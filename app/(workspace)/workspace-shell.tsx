@@ -10,7 +10,6 @@ const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "Clients", href: "/clients", icon: "clients" },
   { label: "My Tasks", href: "/tasks", icon: "tasks" },
-  { label: "Calendar", href: "/calendar", icon: "calendar" },
   { label: "Reports", href: "/reports", icon: "reports" },
 ] satisfies { label: string; href: string; icon: IconName }[];
 
