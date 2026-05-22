@@ -78,6 +78,18 @@
   opacity: 0.76;
 }
 
+.navIcon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+
 .projectGroup {
   display: grid;
   gap: 16px;
