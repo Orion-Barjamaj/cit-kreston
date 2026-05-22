@@ -9,6 +9,8 @@ export type CreateClientState = {
 };
 
 export type CreateTaskState = CreateClientState;
+export type CreateDocumentState = CreateClientState;
+export type CreateActivityState = CreateClientState;
 
 const validStatuses = new Set([
   "active",
@@ -18,6 +20,9 @@ const validStatuses = new Set([
 ]);
 const validTaskStatuses = new Set(["todo", "progress", "review", "done"]);
 const validTaskPriorities = new Set(["low", "medium", "high"]);
+const validDocumentTypes = new Set(["contract", "payroll", "audit", "tax", "report"]);
+const validActivityTypes = new Set(["comment", "meeting", "update", "alert"]);
+const documentBucketName = "documents";
 
 function getTextValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -212,5 +217,155 @@ export async function createClientTask(
   return {
     status: "success",
     message: `${title} was added.`,
+  };
+}
+
+function getFileValue(formData: FormData, key: string) {
+  const value = formData.get(key);
+
+  return value instanceof File && value.size > 0 ? value : null;
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+export async function createClientDocument(
+  _previousState: CreateDocumentState,
+  formData: FormData,
+): Promise<CreateDocumentState> {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return {
+      status: "error",
+      message: "Supabase is not configured.",
+    };
+  }
+
+  const clientId = getOptionalPositiveInt(formData, "client_id");
+  const file = getFileValue(formData, "file");
+  const type = getTextValue(formData, "type") || "report";
+
+  if (!clientId) {
+    return {
+      status: "error",
+      message: "Client ID is invalid.",
+    };
+  }
+
+  if (!file) {
+    return {
+      status: "error",
+      message: "Choose a file from your computer.",
+    };
+  }
+
+  if (!validDocumentTypes.has(type)) {
+    return {
+      status: "error",
+      message: "Choose a valid document type.",
+    };
+  }
+
+  const safeFileName = sanitizeFileName(file.name);
+  const storagePath = `${clientId}/${Date.now()}-${safeFileName}`;
+  const fileBuffer = await file.arrayBuffer();
+  const { error: uploadError } = await supabase.storage
+    .from(documentBucketName)
+    .upload(storagePath, fileBuffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    return {
+      status: "error",
+      message: uploadError.message,
+    };
+  }
+
+  const { data: publicUrlData } = supabase.storage.from(documentBucketName).getPublicUrl(storagePath);
+
+  const { error } = await supabase.from("documents").insert({
+    client_id: clientId,
+    uploaded_by: null,
+    file_name: file.name,
+    file_url: publicUrlData.publicUrl,
+    type,
+  });
+
+  if (error) {
+    return {
+      status: "error",
+      message: error.message,
+    };
+  }
+
+  revalidatePath(`/clients/${clientId}`);
+
+  return {
+    status: "success",
+    message: `${file.name} was added.`,
+  };
+}
+
+export async function createClientActivity(
+  _previousState: CreateActivityState,
+  formData: FormData,
+): Promise<CreateActivityState> {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return {
+      status: "error",
+      message: "Supabase is not configured.",
+    };
+  }
+
+  const clientId = getOptionalPositiveInt(formData, "client_id");
+  const content = getTextValue(formData, "content");
+  const type = getTextValue(formData, "type") || "comment";
+
+  if (!clientId) {
+    return {
+      status: "error",
+      message: "Client ID is invalid.",
+    };
+  }
+
+  if (!content) {
+    return {
+      status: "error",
+      message: "Note content is required.",
+    };
+  }
+
+  if (!validActivityTypes.has(type)) {
+    return {
+      status: "error",
+      message: "Choose a valid activity type.",
+    };
+  }
+
+  const { error } = await supabase.from("activities").insert({
+    client_id: clientId,
+    user_id: null,
+    type,
+    content,
+  });
+
+  if (error) {
+    return {
+      status: "error",
+      message: error.message,
+    };
+  }
+
+  revalidatePath(`/clients/${clientId}`);
+
+  return {
+    status: "success",
+    message: "Note was added.",
   };
 }

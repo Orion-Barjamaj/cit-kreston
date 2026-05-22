@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import AddDocumentNoteForms from "../add-document-note-forms";
 import AddTaskForm from "../add-task-form";
 import styles from "../clients.module.css";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
@@ -16,6 +17,12 @@ const taskDateFormatter = new Intl.DateTimeFormat("en", {
   day: "2-digit",
 });
 
+const detailDateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "2-digit",
+  year: "numeric",
+});
+
 type ClientTaskRecord = {
   id: number;
   title: string;
@@ -25,6 +32,25 @@ type ClientTaskRecord = {
   deadline: string | null;
   assigned_to: number | null;
   department_id: number | null;
+  created_at: string | null;
+};
+
+type ClientActivityRecord = {
+  id: number;
+  client_id: number | null;
+  user_id: number | null;
+  type: string | null;
+  content: string;
+  created_at: string | null;
+};
+
+type ClientDocumentRecord = {
+  id: number;
+  client_id: number | null;
+  uploaded_by: number | null;
+  file_name: string;
+  file_url: string | null;
+  type: string | null;
   created_at: string | null;
 };
 
@@ -68,21 +94,69 @@ const fallbackTasks: DisplayTask[] = [
   },
 ];
 
-const timeline = [
-  { date: "2026-05-20", label: "May 20", event: "Contract signed" },
-  { date: "2026-05-21", label: "May 21", event: "Documents uploaded" },
-  { date: "2026-05-22", label: "May 22", event: "Payroll files checked" },
-  { date: "2026-05-23", label: "May 23", event: "Review pending" },
+const fallbackActivities: ClientActivityRecord[] = [
+  {
+    id: 1,
+    client_id: null,
+    user_id: 3,
+    type: "update",
+    content: "Contract signed",
+    created_at: "2026-05-20T00:00:00",
+  },
+  {
+    id: 2,
+    client_id: null,
+    user_id: 2,
+    type: "update",
+    content: "Documents uploaded",
+    created_at: "2026-05-21T00:00:00",
+  },
+  {
+    id: 3,
+    client_id: null,
+    user_id: 4,
+    type: "comment",
+    content: "Payroll files checked",
+    created_at: "2026-05-22T00:00:00",
+  },
+  {
+    id: 4,
+    client_id: null,
+    user_id: 1,
+    type: "alert",
+    content: "Review pending",
+    created_at: "2026-05-23T00:00:00",
+  },
 ];
 
-const documents = [
-  "signed_contract.pdf",
-  "company_extract.pdf",
-  "payroll_may.xlsx",
-];
-const notes = [
-  "Waiting for manager approval.",
-  "Client asked for a May 28 follow-up.",
+const fallbackDocuments: ClientDocumentRecord[] = [
+  {
+    id: 1,
+    client_id: null,
+    uploaded_by: 1,
+    file_name: "signed_contract.pdf",
+    file_url: null,
+    type: "contract",
+    created_at: "2026-05-20T00:00:00",
+  },
+  {
+    id: 2,
+    client_id: null,
+    uploaded_by: 2,
+    file_name: "company_extract.pdf",
+    file_url: null,
+    type: "report",
+    created_at: "2026-05-21T00:00:00",
+  },
+  {
+    id: 3,
+    client_id: null,
+    uploaded_by: 4,
+    file_name: "payroll_may.xlsx",
+    file_url: null,
+    type: "payroll",
+    created_at: "2026-05-22T00:00:00",
+  },
 ];
 
 async function getClient(id: string) {
@@ -135,6 +209,38 @@ async function getClientTasks(clientId: number) {
   return (data ?? []) as ClientTaskRecord[];
 }
 
+async function getClientActivities(clientId: number) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return [] as ClientActivityRecord[];
+  }
+
+  const { data } = await supabase
+    .from("activities")
+    .select("id, client_id, user_id, type, content, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as ClientActivityRecord[];
+}
+
+async function getClientDocuments(clientId: number) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return [] as ClientDocumentRecord[];
+  }
+
+  const { data } = await supabase
+    .from("documents")
+    .select("id, client_id, uploaded_by, file_name, file_url, type, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as ClientDocumentRecord[];
+}
+
 function managerName(client: ClientRecord) {
   return client.assigned_manager_id
     ? `Manager #${client.assigned_manager_id}`
@@ -163,6 +269,20 @@ function formatTaskDate(value: string | null) {
   return taskDateFormatter.format(date);
 }
 
+function formatDetailDate(value: string | null) {
+  if (!value) {
+    return "Not recorded";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Not recorded";
+  }
+
+  return detailDateFormatter.format(date);
+}
+
 function normalizeTaskDate(value: string | null) {
   if (!value) {
     return null;
@@ -189,11 +309,34 @@ function mapTask(task: ClientTaskRecord): DisplayTask {
   };
 }
 
-function getAiInsights(tasks: DisplayTask[]) {
+function getDocumentSummary(document: ClientDocumentRecord) {
+  const type = document.type ?? "document";
+
+  if (type === "contract") {
+    return "AI Summary: Contract document. Check renewal dates, signature completeness, and client obligations.";
+  }
+
+  if (type === "payroll") {
+    return "AI Summary: Payroll file. Review employee totals, submission deadline, and approval status.";
+  }
+
+  if (type === "audit") {
+    return "AI Summary: Audit document. Review evidence quality, open findings, and manager signoff.";
+  }
+
+  if (type === "tax") {
+    return "AI Summary: Tax document. Check missing declarations, submission period, and supporting files.";
+  }
+
+  return "AI Summary: Client report. Review key findings, unresolved items, and next action owner.";
+}
+
+function getAiInsights(tasks: DisplayTask[], documents: ClientDocumentRecord[], activities: ClientActivityRecord[]) {
   const insights = new Set<string>();
   const activeTasks = tasks.filter((task) => task.status !== "done").length;
-  const lastActivity = timeline
-    .map((item) => new Date(`${item.date}T00:00:00`))
+  const lastActivity = activities
+    .map((item) => new Date(item.created_at ?? ""))
+    .filter((date) => !Number.isNaN(date.getTime()))
     .sort((first, second) => second.getTime() - first.getTime())[0];
 
   tasks.forEach((task) => {
@@ -259,8 +402,13 @@ export default async function ClientPage({ params }: ClientPageProps) {
 
   const status = displayStatus(client.status);
   const savedTasks = await getClientTasks(client.id);
+  const savedActivities = await getClientActivities(client.id);
+  const savedDocuments = await getClientDocuments(client.id);
   const tasks = savedTasks.length > 0 ? savedTasks.map(mapTask) : fallbackTasks;
-  const aiInsights = getAiInsights(tasks);
+  const activities = savedActivities.length > 0 ? savedActivities : fallbackActivities;
+  const documents = savedDocuments.length > 0 ? savedDocuments : fallbackDocuments;
+  const notes = activities.filter((activity) => activity.type === "comment" || activity.type === "update");
+  const aiInsights = getAiInsights(tasks, documents, activities);
 
   return (
     <section className={styles.pageStack}>
@@ -359,10 +507,11 @@ export default async function ClientPage({ params }: ClientPageProps) {
         <article className={styles.panel}>
           <h3>Activity Timeline</h3>
           <ol className={styles.timelineList}>
-            {timeline.map((item) => (
-              <li key={`${item.date}-${item.event}`}>
-                <time>{item.label}</time>
-                <span>{item.event}</span>
+            {activities.map((activity) => (
+              <li key={activity.id}>
+                <time>{formatDetailDate(activity.created_at)}</time>
+                <span>{activity.content}</span>
+                <small>{activity.type ?? "update"}</small>
               </li>
             ))}
           </ol>
@@ -370,21 +519,38 @@ export default async function ClientPage({ params }: ClientPageProps) {
 
         <article className={styles.panel}>
           <h3>Documents & Notes</h3>
+          <AddDocumentNoteForms clientId={client.id} />
           <ul className={styles.documentList}>
             {documents.map((document) => (
-              <li key={document}>
-                <span>{document}</span>
-                <button className={styles.textButton} type="button">
-                  Open
-                </button>
+              <li key={document.id}>
+                <div>
+                  <span>{document.file_name}</span>
+                  <small>
+                    {document.type ?? "document"} - {formatDetailDate(document.created_at)}
+                  </small>
+                </div>
+                <div className={styles.documentActions}>
+                  <details className={styles.documentInfo}>
+                    <summary aria-label={`Show AI summary for ${document.file_name}`}>i</summary>
+                    <p>{getDocumentSummary(document)}</p>
+                  </details>
+                  {document.file_url ? (
+                    <a className={styles.textButton} href={document.file_url} rel="noreferrer" target="_blank">
+                      Open
+                    </a>
+                  ) : (
+                    <span className={styles.mutedAction}>No file</span>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
           <div className={styles.noteList}>
             {notes.map((note) => (
-              <div key={note}>
-                <strong>Note</strong>
-                <p>{note}</p>
+              <div key={note.id}>
+                <strong>{note.type ?? "note"}</strong>
+                <p>{note.content}</p>
+                <small>{formatDetailDate(note.created_at)}</small>
               </div>
             ))}
           </div>
