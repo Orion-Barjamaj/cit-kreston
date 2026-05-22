@@ -264,16 +264,25 @@ export default async function ClientPage({ params }: ClientPageProps) {
 
   return (
     <section className={styles.pageStack}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h2>{client.name}</h2>
-
+      <div className={styles.clientDetailHeader}>
+        <div>
+          <p className={styles.eyebrow}>Client file</p>
+          <h2>{client.name}</h2>
+          <p>Review client status, tasks, documents, and activity in one place.</p>
+        </div>
         <Link className={styles.textButton} href="/clients">
           Back to clients
         </Link>
       </div>
 
       <article className={styles.panel}>
-        <p className={styles.eyebrow}>Client overview</p>
+        <div className={styles.sectionHeader}>
+          <div>
+            <p className={styles.eyebrow}>Client overview</p>
+            <h3>Account details</h3>
+          </div>
+          <span className={`${styles.statusTag} ${styles.statusActive}`}>{status}</span>
+        </div>
         <dl className={styles.detailGrid}>
           <div>
             <dt>Industry</dt>
@@ -293,7 +302,10 @@ export default async function ClientPage({ params }: ClientPageProps) {
       </article>
 
       <aside className={styles.aiSummary}>
-        <h3>AI Summary</h3>
+        <div className={styles.sectionHeader}>
+          <h3>AI Summary</h3>
+          <span>{aiInsights.length} insight{aiInsights.length === 1 ? "" : "s"}</span>
+        </div>
         <ul className={styles.cleanList}>
           {aiInsights.length > 0 ? (
             aiInsights.map((insight) => <li key={insight}>{insight}</li>)
@@ -305,7 +317,10 @@ export default async function ClientPage({ params }: ClientPageProps) {
 
       <article className={styles.panel}>
         <div className={styles.clientFileHeader}>
-          <h3>Tasks for this client</h3>
+          <div>
+            <p className={styles.eyebrow}>Workflow</p>
+            <h3>Tasks for this client</h3>
+          </div>
         </div>
         <AddTaskForm clientId={client.id} />
         <div className={styles.tableWrap}>

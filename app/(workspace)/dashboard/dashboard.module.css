@@ -112,15 +112,12 @@
 
 .panelToolbar h3 {
   margin-right: 4px;
-  font-size: 20px;
+  color: #111827;
+  font-size: 18px;
 }
 
 .panelToolbar .textButton {
   margin-left: auto;
-  border-radius: 999px;
-  padding: 0 20px;
-  background: #fafafa;
-  color: #111111;
 }
 
 .projectPanel .tableWrap {
@@ -222,6 +219,63 @@
   font-size: 16px;
 }
 
+.scheduleControls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.scheduleArrow {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d7def0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.scheduleArrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #1d4ed8;
+  border-right: 2px solid #1d4ed8;
+}
+
+.previousArrow::before {
+  margin-left: 3px;
+  transform: rotate(-135deg);
+}
+
+.nextArrow::before {
+  margin-right: 3px;
+  transform: rotate(45deg);
+}
+
+.scheduleArrow:hover:not(:disabled) {
+  border-color: #2f66e8;
+  background: #f8fafc;
+}
+
+.scheduleArrow:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.scheduleControls > span {
+  min-width: 112px;
+  text-align: center;
+}
+
 .weekStrip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -230,18 +284,52 @@
   padding: 14px 0 18px;
 }
 
-.weekStrip span {
+.weekStrip button {
   min-height: 44px;
   display: grid;
+  gap: 2px;
   place-items: center;
+  border: 0;
   border-radius: 8px;
+  background: transparent;
   color: #111111;
+  font: inherit;
   font-size: 12px;
   font-weight: 700;
+  cursor: pointer;
+}
+
+.weekStrip button span {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.weekStrip button strong {
+  font-size: 13px;
 }
 
 .currentDay {
-  background: #e694ed;
+  background: #9ab1e7 !important;
+}
+
+.selectedDayInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #ededed;
+  padding: 12px 0;
+}
+
+.selectedDayInfo strong {
+  color: #111111;
+  font-size: 13px;
+}
+
+.selectedDayInfo span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .scheduleList,
@@ -292,6 +380,15 @@
 .scheduleList span {
   color: #5e5e5e;
   font-size: 12px;
+}
+
+.scheduleList small {
+  color: #374151;
+  font-size: 12px;
+}
+
+.emptySchedule::before {
+  background: #d1d5db !important;
 }
 
 .noteChecklist {

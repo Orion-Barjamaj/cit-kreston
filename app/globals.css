@@ -36,12 +36,13 @@ a {
   text-decoration: none;
 }
 
-* {
-  overflow: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-*::-webkit-scrollbar {
-  display: none;
+button {
+  color: inherit;
 }

@@ -5,26 +5,28 @@
 }
 
 .sidebar {
-  position: fixed; 
+  position: fixed;
   inset: 0 auto 0 0;
   width: 240px;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 20px 16px 24px;
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 16px;
   overflow: hidden;
-  background-color: #F5F5F4;
+  background: #f5f5f4;
   z-index: 20;
 }
 
 .brand {
-  min-height: 48px;
+  min-height: 44px;
   display: flex;
-  font-size: 16px;
-  font-weight: 800;
-  align-items: flex-start;
-  padding: 0 14px 28px;
+  align-items: center;
+  border-radius: 8px;
+  padding: 0 14px 22px;
   color: #111111;
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .brand strong,
@@ -49,20 +51,21 @@
 }
 
 .navLink {
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 10px;
   border-radius: 8px;
-  padding: 10px 14px;
-  color: #424242;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 0 14px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
   transition: background 160ms ease, color 160ms ease;
 }
 
 .navLink:hover {
   color: #195bd8;
-  background: #f5f7fb;
+  background: #ffffff;
 }
 
 .active {
@@ -328,9 +331,10 @@
 
 .main {
   flex: 1;
-  border-radius: 32px;
-  min-height: 100vh;
-  padding: 36px 34px;
+  border: 1px solid #eeeeee;
+  border-radius: 20px;
+  min-height: calc(100vh - 32px);
+  padding: 34px;
   background: #ffffff;
 }
 
@@ -421,7 +425,7 @@
   max-width: 1120px;
   margin: 0 auto;
   display: grid;
-  gap: 22px;
+  gap: 20px;
 }
 
 .pageHeader {
@@ -433,6 +437,7 @@
 
 .pageHeader h2 {
   margin-top: 4px;
+  color: #111827;
   font-size: clamp(24px, 3vw, 32px);
   line-height: 1.1;
 }
@@ -523,15 +528,12 @@
 
 .panelToolbar h3 {
   margin-right: 4px;
-  font-size: 20px;
+  color: #111827;
+  font-size: 18px;
 }
 
 .panelToolbar .textButton {
   margin-left: auto;
-  border-radius: 999px;
-  padding: 0 20px;
-  background: #fafafa;
-  color: #111111;
 }
 
 .projectPanel .tableWrap {
@@ -600,7 +602,7 @@
 }
 
 .statusOnboarding {
-    background: #3B82F6 !important;
+  background: #3b82f6 !important;
   color: #fff !important;
 }
 
@@ -734,7 +736,7 @@
   border: 1px solid #e6e6e6;
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: 0 10px 28px rgba(17, 17, 17, 0.04);
+  box-shadow: 0 8px 22px rgba(17, 17, 17, 0.035);
 }
 
 .aiBox {
@@ -819,17 +821,25 @@
   font: inherit;
 }
 
+.selectControl:focus,
+.fullSearch:focus,
+.formStack input:focus {
+  border-color: #2f66e8;
+  outline: 3px solid #dbeafe;
+}
+
 .fullSearch {
   width: 100%;
-  height: 32px;
+  height: 40px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .tableWrap {
   overflow-x: auto;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
+  background: #ffffff;
 }
 
 .dataTable {
@@ -840,7 +850,7 @@
 
 .dataTable th,
 .dataTable td {
-  padding: 14px 18px;
+  padding: 13px 16px;
   border-bottom: 1px solid #ededed;
   text-align: left;
   white-space: nowrap;
@@ -896,18 +906,16 @@
 .textButton {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  justify-content: center;
+  min-height: 32px;
+  width: fit-content;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #1168c8;
 }
 
-.textButton {
-  background-color: #1168c8;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  height: 32px;
-  width: 104px;
+.textButton:hover {
+  background: #eff6ff;
 }
 
 .primaryButton {
@@ -918,6 +926,10 @@
   color: #ffffff;
 }
 
+.primaryButton:hover {
+  background: #1d4ed8;
+}
+
 .secondaryButton {
   min-height: 36px;
   border: 1px solid #dedede;
@@ -925,6 +937,10 @@
   padding: 0 14px;
   background: #ffffff;
   color: #111111;
+}
+
+.secondaryButton:hover {
+  background: #f8fafc;
 }
 
 .pillRow {
@@ -1603,7 +1619,8 @@
   .main {
     min-height: auto;
     border-radius: 0;
-    padding: 44px 24px;
+    border: 0;
+    padding: 32px 24px;
   }
 
   .dashboardHero {

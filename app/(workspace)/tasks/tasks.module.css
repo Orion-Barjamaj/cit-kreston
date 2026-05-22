@@ -251,6 +251,13 @@
   resize: vertical;
 }
 
+@media (max-width: 760px) {
+  .taskModal {
+    width: calc(100vw - 32px);
+    padding: 16px;
+  }
+}
+
 @media (max-width: 980px) {
   .kanban,
   .workerGroups {

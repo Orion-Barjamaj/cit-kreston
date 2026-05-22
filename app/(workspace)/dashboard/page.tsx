@@ -1,4 +1,5 @@
 import styles from "./dashboard.module.css";
+import ScheduleWidget from "./schedule-widget";
 
 const metrics = [
   { label: "Overdue Tasks", value: "3" },
@@ -43,12 +44,6 @@ const projects = [
     initials: "LJ",
     status: "Completed",
   },
-];
-
-const schedule = [
-  { title: "Kickoff Meeting", time: "01:00 PM to 02:30 PM", accent: "green" },
-  { title: "Create audit report draft", time: "04:00 PM to 05:30 PM", accent: "blue" },
-  { title: "Create client handoff notes", time: "05:00 PM to 06:30 PM", accent: "pink" },
 ];
 
 const notes = [
@@ -168,29 +163,7 @@ export default function DashboardPage() {
       </article>
 
       <div className={styles.twoColumn}>
-        <article className={styles.panel}>
-          <div className={styles.panelToolbar}>
-            <h3>Schedule</h3>
-            <button className={styles.textButton} type="button">
-              ...
-            </button>
-          </div>
-          <div className={styles.weekStrip}>
-            {["Mo 15", "Tu 16", "We 17", "Th 18", "Fr 19", "Sa 20", "Su 14"].map((day) => (
-              <span className={day === "We 17" ? styles.currentDay : ""} key={day}>
-                {day}
-              </span>
-            ))}
-          </div>
-          <ul className={styles.scheduleList}>
-            {schedule.map((item) => (
-              <li className={styles[`schedule${item.accent}`]} key={item.title}>
-                <strong>{item.title}</strong>
-                <span>{item.time}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
+        <ScheduleWidget />
 
         <article className={styles.panel}>
           <h3>Notes</h3>

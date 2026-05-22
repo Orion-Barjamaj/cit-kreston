@@ -31,7 +31,7 @@
 
 .calendarGrid strong,
 .calendarGrid span {
-  min-height: 34px;
+  min-height: 38px;
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -48,4 +48,10 @@
   color: #ffffff;
   background: #1168c8 !important;
   font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .calendarGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
