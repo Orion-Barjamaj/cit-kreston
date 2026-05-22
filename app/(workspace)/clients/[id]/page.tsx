@@ -8,17 +8,41 @@ type ClientPageProps = {
   params: Promise<{ id: string }>;
 };
 
+const today = new Date("2026-05-22T00:00:00");
+const dayInMs = 24 * 60 * 60 * 1000;
+
 const tasks = [
-  ["Review payroll documents", "Sara", "Review", "Tomorrow"],
-  ["Prepare audit checklist", "Andi", "In Progress", "Friday"],
-  ["Confirm tax declaration", "Arber", "Pending", "May 28"],
+  {
+    name: "Review payroll documents",
+    assignedTo: "Sara",
+    status: "review",
+    deadline: "2026-05-24",
+    deadlineLabel: "May 24",
+    reviewStartedAt: "2026-05-18",
+  },
+  {
+    name: "Prepare audit checklist",
+    assignedTo: "Andi",
+    status: "in progress",
+    deadline: "2026-05-21",
+    deadlineLabel: "May 21",
+    reviewStartedAt: null,
+  },
+  {
+    name: "Confirm tax declaration",
+    assignedTo: "Arber",
+    status: "pending",
+    deadline: "2026-05-28",
+    deadlineLabel: "May 28",
+    reviewStartedAt: null,
+  },
 ];
 
 const timeline = [
-  ["May 20", "Contract signed"],
-  ["May 21", "Documents uploaded"],
-  ["May 22", "Payroll files checked"],
-  ["May 23", "Review pending"],
+  { date: "2026-05-20", label: "May 20", event: "Contract signed" },
+  { date: "2026-05-21", label: "May 21", event: "Documents uploaded" },
+  { date: "2026-05-22", label: "May 22", event: "Payroll files checked" },
+  { date: "2026-05-23", label: "May 23", event: "Review pending" },
 ];
 
 const documents = ["signed_contract.pdf", "company_extract.pdf", "payroll_may.xlsx"];
@@ -66,6 +90,49 @@ function displayStatus(status: string | null) {
   return status ?? "active";
 }
 
+function daysBetween(firstDate: Date, secondDate: Date) {
+  return Math.floor((firstDate.getTime() - secondDate.getTime()) / dayInMs);
+}
+
+function getAiInsights() {
+  const insights = new Set<string>();
+  const activeTasks = tasks.filter((task) => task.status !== "done").length;
+  const lastActivity = timeline
+    .map((item) => new Date(`${item.date}T00:00:00`))
+    .sort((first, second) => second.getTime() - first.getTime())[0];
+
+  tasks.forEach((task) => {
+    const deadline = new Date(`${task.deadline}T00:00:00`);
+    const daysUntilDeadline = daysBetween(deadline, today);
+
+    if (deadline < today && task.status !== "done") {
+      insights.add("Task overdue");
+    }
+
+    if (daysUntilDeadline <= 2 && daysUntilDeadline >= 0 && task.status !== "done") {
+      insights.add("Upcoming deadline requires attention");
+    }
+
+    if (task.status === "review" && task.reviewStartedAt) {
+      const daysInReview = daysBetween(today, new Date(`${task.reviewStartedAt}T00:00:00`));
+
+      if (daysInReview > 3) {
+        insights.add("Review process may be blocked");
+      }
+    }
+  });
+
+  if (activeTasks > 0 && documents.length === 0) {
+    insights.add("Missing client documents");
+  }
+
+  if (lastActivity && daysBetween(today, lastActivity) > 7) {
+    insights.add("No recent client activity");
+  }
+
+  return Array.from(insights);
+}
+
 export default async function ClientPage({ params }: ClientPageProps) {
   const { id } = await params;
   const { client, isConfigured } = await getClient(id);
@@ -84,6 +151,7 @@ export default async function ClientPage({ params }: ClientPageProps) {
   }
 
   const status = displayStatus(client.status);
+  const aiInsights = getAiInsights();
 
   return (
     <section className={styles.pageStack}>
@@ -116,6 +184,17 @@ export default async function ClientPage({ params }: ClientPageProps) {
         </dl>
       </article>
 
+      <aside className={styles.aiSummary}>
+        <h3>AI Summary</h3>
+        <ul className={styles.cleanList}>
+          {aiInsights.length > 0 ? (
+            aiInsights.map((insight) => <li key={insight}>{insight}</li>)
+          ) : (
+            <li>No urgent client risks detected.</li>
+          )}
+        </ul>
+      </aside>
+
       <article className={styles.panel}>
         <div className={styles.clientFileHeader}>
           <h3>Tasks for this client</h3>
@@ -135,14 +214,14 @@ export default async function ClientPage({ params }: ClientPageProps) {
               </tr>
             </thead>
             <tbody>
-              {tasks.map(([task, assignedTo, taskStatus, deadline]) => (
-                <tr key={task}>
-                  <td>{task}</td>
-                  <td>{assignedTo}</td>
+              {tasks.map((task) => (
+                <tr key={task.name}>
+                  <td>{task.name}</td>
+                  <td>{task.assignedTo}</td>
                   <td>
-                    <span className={styles.statusTag}>{taskStatus}</span>
+                    <span className={styles.statusTag}>{task.status}</span>
                   </td>
-                  <td>{deadline}</td>
+                  <td>{task.deadlineLabel}</td>
                   <td>
                     <button className={styles.textButton} type="button">
                       Comment
@@ -159,10 +238,10 @@ export default async function ClientPage({ params }: ClientPageProps) {
         <article className={styles.panel}>
           <h3>Activity Timeline</h3>
           <ol className={styles.timelineList}>
-            {timeline.map(([date, event]) => (
-              <li key={`${date}-${event}`}>
-                <time>{date}</time>
-                <span>{event}</span>
+            {timeline.map((item) => (
+              <li key={`${item.date}-${item.event}`}>
+                <time>{item.label}</time>
+                <span>{item.event}</span>
               </li>
             ))}
           </ol>
