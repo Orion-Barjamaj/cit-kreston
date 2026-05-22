@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import styles from "../workspace.module.css";
 import type { ClientRecord } from "@/app/lib/supabase";
@@ -38,13 +39,29 @@ function formatField(value: string | number | null) {
   return value;
 }
 
-export default function ClientsView({ clients, error, isConfigured }: ClientsViewProps) {
-  const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id ?? null);
+function getSearchText(client: ClientRecord) {
+  return [
+    client.name,
+    client.industry,
+    client.status ?? "active",
+    client.assigned_manager_id,
+    client.created_at,
+  ]
+    .filter((value) => value !== null && value !== undefined)
+    .join(" ")
+    .toLowerCase();
+}
 
-  const selectedClient = useMemo(
-    () => clients.find((client) => client.id === selectedClientId) ?? clients[0] ?? null,
-    [clients, selectedClientId],
-  );
+export default function ClientsView({ clients, error, isConfigured }: ClientsViewProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredClients = useMemo(() => {
+    if (!normalizedSearchTerm) {
+      return clients;
+    }
+
+    return clients.filter((client) => getSearchText(client).includes(normalizedSearchTerm));
+  }, [clients, normalizedSearchTerm]);
 
   return (
     <>
@@ -56,7 +73,14 @@ export default function ClientsView({ clients, error, isConfigured }: ClientsVie
 
       {error ? <div className={styles.errorBox}>{error}</div> : null}
 
-      <input className={styles.fullSearch} type="search" placeholder="Search clients" />
+      <input
+        aria-label="Search clients"
+        className={styles.fullSearch}
+        onChange={(event) => setSearchTerm(event.target.value)}
+        placeholder="Search clients"
+        type="search"
+        value={searchTerm}
+      />
 
       <div className={styles.tableWrap}>
         <table className={styles.dataTable}>
@@ -71,72 +95,37 @@ export default function ClientsView({ clients, error, isConfigured }: ClientsVie
             </tr>
           </thead>
           <tbody>
-            {clients.length > 0 ? (
-              clients.map((client) => {
-                const isSelected = client.id === selectedClient?.id;
-
-                return (
-                  <tr className={isSelected ? styles.selectedRow : undefined} key={client.id}>
-                    <td>{client.name}</td>
-                    <td>{formatField(client.industry)}</td>
-                    <td>
-                      <span className={styles.statusTag}>{client.status ?? "active"}</span>
-                    </td>
-                    <td>{formatField(client.assigned_manager_id)}</td>
-                    <td>{formatDate(client.created_at)}</td>
-                    <td>
-                      <button
-                        className={styles.textButton}
-                        type="button"
-                        onClick={() => setSelectedClientId(client.id)}
-                      >
-                        Open file
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
+            {filteredClients.length > 0 ? (
+              filteredClients.map((client) => (
+                <tr key={client.id}>
+                  <td>
+                    <Link className={styles.tableLink} href={`/clients/${client.id}`}>
+                      {client.name}
+                    </Link>
+                  </td>
+                  <td>{formatField(client.industry)}</td>
+                  <td>
+                    <span className={styles.statusTag}>{client.status ?? "active"}</span>
+                  </td>
+                  <td>{formatField(client.assigned_manager_id)}</td>
+                  <td>{formatDate(client.created_at)}</td>
+                  <td>
+                    <Link className={styles.textButton} href={`/clients/${client.id}`}>
+                      Open file
+                    </Link>
+                  </td>
+                </tr>
+              ))
             ) : (
               <tr>
-                <td colSpan={6}>No clients found.</td>
+                <td colSpan={6}>
+                  {normalizedSearchTerm ? `No clients match "${searchTerm}".` : "No clients found."}
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-
-      <article className={styles.panel}>
-        <div className={styles.clientFileHeader}>
-          <div>
-            <p className={styles.eyebrow}>Client file</p>
-            <h3>{selectedClient?.name ?? "Select a client"}</h3>
-          </div>
-          {selectedClient ? <span className={styles.statusTag}>{selectedClient.status ?? "active"}</span> : null}
-        </div>
-
-        {selectedClient ? (
-          <dl className={styles.detailGrid}>
-            <div>
-              <dt>Industry</dt>
-              <dd>{formatField(selectedClient.industry)}</dd>
-            </div>
-            <div>
-              <dt>Assigned manager ID</dt>
-              <dd>{formatField(selectedClient.assigned_manager_id)}</dd>
-            </div>
-            <div>
-              <dt>Created</dt>
-              <dd>{formatDate(selectedClient.created_at)}</dd>
-            </div>
-            <div>
-              <dt>Client ID</dt>
-              <dd>{selectedClient.id}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p>Choose a client from the table to open its file.</p>
-        )}
-      </article>
     </>
   );
 }
