@@ -1,9 +1,21 @@
 import styles from "./dashboard.module.css";
 
 const metrics = [
-  { label: "Hours Saved", value: "12hrs" },
-  { label: "Projects Completed", value: "24" },
-  { label: "Projects In-progress", value: "7" },
+  { label: "Overdue Tasks", value: "3" },
+  { label: "Tasks Due Today", value: "7" },
+  { label: "Active Workload", value: "82%" },
+];
+
+const recentActivity = [
+  "Vodafone task updated",
+  "Audit completed",
+  "Tax review assigned",
+];
+
+const workload = [
+  { team: "Audit", value: "86%" },
+  { team: "Payroll", value: "72%" },
+  { team: "Tax", value: "68%" },
 ];
 
 const projects = [
@@ -82,6 +94,29 @@ export default function DashboardPage() {
             {metric.label}
           </span>
         ))}
+      </div>
+
+      <div className={styles.managerGrid}>
+        <article className={styles.panel}>
+          <h3>Recent Activity</h3>
+          <ul className={styles.activityFeed}>
+            {recentActivity.map((activity) => (
+              <li key={activity}>{activity}</li>
+            ))}
+          </ul>
+        </article>
+
+        <article className={styles.panel}>
+          <h3>Active Workload</h3>
+          <div className={styles.workloadList}>
+            {workload.map((item) => (
+              <div key={item.team}>
+                <span>{item.team}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
       </div>
 
       <article className={styles.projectPanel}>
