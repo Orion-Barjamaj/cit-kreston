@@ -735,7 +735,7 @@
 
 .kanban {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -755,8 +755,312 @@
   background: #ffffff;
 }
 
+.workerNameButton {
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: #1168c8;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workerTaskCard {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.workerDropdownButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workerDropdownButton span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workerDropdownButton small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.workerDropdown {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 8px;
+}
+
+.workerDropdownItem {
+  display: grid;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.workerDropdownItem strong {
+  font-size: 13px;
+}
+
+.workerDropdownItem span,
+.workerDropdown > span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.workerDetails {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto;
+  align-items: start;
+  gap: 16px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.workerDetails h3 {
+  margin-top: 4px;
+  font-size: 18px;
+}
+
+.workerDetails p {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.workerWorkList {
+  display: grid;
+  gap: 8px;
+}
+
+.workerWorkList span {
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 12px;
+}
+
+.modalLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.32);
+}
+
+.taskModal {
+  width: min(760px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.22);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modalHeader h3 {
+  margin-top: 4px;
+  font-size: 22px;
+}
+
+.workerGroups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workerGroup {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.workerGroup h4 {
+  font-size: 13px;
+}
+
+.workerChoice {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workerChoice strong {
+  font-size: 13px;
+}
+
+.workerChoice span,
+.workerChoice small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.taskModal label {
+  display: grid;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.taskModal textarea,
+.taskModal input {
+  width: 100%;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 10px;
+  color: #111827;
+  font: inherit;
+  font-size: 13px;
+}
+
+.taskModal textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.addTaskForm {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.addTaskForm input {
+  min-height: 32px;
+  width: 100%;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #111827;
+  font: inherit;
+  font-size: 12px;
+}
+
+.addTaskForm label {
+  display: grid;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.assigneeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.assigneeButton {
+  min-height: 28px;
+  border: 1px solid #d9dee7;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #374151;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.selectedAssignee {
+  border-color: #1168c8;
+  background: #edf5ff;
+  color: #1168c8;
+  font-weight: 700;
+}
+
+.personPreview {
+  display: grid;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.personPreview strong {
+  font-size: 13px;
+}
+
+.personPreview span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .taskCard strong {
   font-size: 13px;
+}
+
+.columnHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.columnHeader span {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.progressTrack {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.progressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1168c8;
 }
 
 .cardActions {
