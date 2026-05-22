@@ -20,6 +20,8 @@
 .brand {
   min-height: 48px;
   display: flex;
+  font-size: 16px;
+  font-weight: 800;
   align-items: flex-start;
   padding: 0 14px 28px;
   color: #111111;

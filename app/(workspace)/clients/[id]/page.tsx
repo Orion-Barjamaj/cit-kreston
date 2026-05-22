@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import AddTaskForm from "../add-task-form";
 import styles from "../clients.module.css";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
@@ -10,9 +11,36 @@ type ClientPageProps = {
 
 const today = new Date("2026-05-22T00:00:00");
 const dayInMs = 24 * 60 * 60 * 1000;
+const taskDateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "2-digit",
+});
 
-const tasks = [
+type ClientTaskRecord = {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string | null;
+  priority: string | null;
+  deadline: string | null;
+  assigned_to: number | null;
+  department_id: number | null;
+  created_at: string | null;
+};
+
+type DisplayTask = {
+  id: string;
+  name: string;
+  assignedTo: string;
+  status: string;
+  deadline: string | null;
+  deadlineLabel: string;
+  reviewStartedAt: string | null;
+};
+
+const fallbackTasks: DisplayTask[] = [
   {
+    id: "fallback-payroll",
     name: "Review payroll documents",
     assignedTo: "Sara",
     status: "review",
@@ -21,17 +49,19 @@ const tasks = [
     reviewStartedAt: "2026-05-18",
   },
   {
+    id: "fallback-audit",
     name: "Prepare audit checklist",
     assignedTo: "Andi",
-    status: "in progress",
+    status: "progress",
     deadline: "2026-05-21",
     deadlineLabel: "May 21",
     reviewStartedAt: null,
   },
   {
+    id: "fallback-tax",
     name: "Confirm tax declaration",
     assignedTo: "Arber",
-    status: "pending",
+    status: "todo",
     deadline: "2026-05-28",
     deadlineLabel: "May 28",
     reviewStartedAt: null,
@@ -45,8 +75,15 @@ const timeline = [
   { date: "2026-05-23", label: "May 23", event: "Review pending" },
 ];
 
-const documents = ["signed_contract.pdf", "company_extract.pdf", "payroll_may.xlsx"];
-const notes = ["Waiting for manager approval.", "Client asked for a May 28 follow-up."];
+const documents = [
+  "signed_contract.pdf",
+  "company_extract.pdf",
+  "payroll_may.xlsx",
+];
+const notes = [
+  "Waiting for manager approval.",
+  "Client asked for a May 28 follow-up.",
+];
 
 async function getClient(id: string) {
   await connection();
@@ -82,8 +119,26 @@ async function getClient(id: string) {
   };
 }
 
+async function getClientTasks(clientId: number) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return [] as ClientTaskRecord[];
+  }
+
+  const { data } = await supabase
+    .from("tasks")
+    .select("id, title, description, status, priority, deadline, assigned_to, department_id, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as ClientTaskRecord[];
+}
+
 function managerName(client: ClientRecord) {
-  return client.assigned_manager_id ? `Manager #${client.assigned_manager_id}` : "Unassigned";
+  return client.assigned_manager_id
+    ? `Manager #${client.assigned_manager_id}`
+    : "Unassigned";
 }
 
 function displayStatus(status: string | null) {
@@ -94,7 +149,47 @@ function daysBetween(firstDate: Date, secondDate: Date) {
   return Math.floor((firstDate.getTime() - secondDate.getTime()) / dayInMs);
 }
 
-function getAiInsights() {
+function formatTaskDate(value: string | null) {
+  if (!value) {
+    return "No deadline";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "No deadline";
+  }
+
+  return taskDateFormatter.format(date);
+}
+
+function normalizeTaskDate(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function mapTask(task: ClientTaskRecord): DisplayTask {
+  return {
+    id: String(task.id),
+    name: task.title,
+    assignedTo: task.assigned_to ? `User #${task.assigned_to}` : "Unassigned",
+    status: task.status ?? "todo",
+    deadline: normalizeTaskDate(task.deadline),
+    deadlineLabel: formatTaskDate(task.deadline),
+    reviewStartedAt: task.status === "review" ? normalizeTaskDate(task.created_at) : null,
+  };
+}
+
+function getAiInsights(tasks: DisplayTask[]) {
   const insights = new Set<string>();
   const activeTasks = tasks.filter((task) => task.status !== "done").length;
   const lastActivity = timeline
@@ -102,6 +197,10 @@ function getAiInsights() {
     .sort((first, second) => second.getTime() - first.getTime())[0];
 
   tasks.forEach((task) => {
+    if (!task.deadline) {
+      return;
+    }
+
     const deadline = new Date(`${task.deadline}T00:00:00`);
     const daysUntilDeadline = daysBetween(deadline, today);
 
@@ -109,12 +208,19 @@ function getAiInsights() {
       insights.add("Task overdue");
     }
 
-    if (daysUntilDeadline <= 2 && daysUntilDeadline >= 0 && task.status !== "done") {
+    if (
+      daysUntilDeadline <= 2 &&
+      daysUntilDeadline >= 0 &&
+      task.status !== "done"
+    ) {
       insights.add("Upcoming deadline requires attention");
     }
 
     if (task.status === "review" && task.reviewStartedAt) {
-      const daysInReview = daysBetween(today, new Date(`${task.reviewStartedAt}T00:00:00`));
+      const daysInReview = daysBetween(
+        today,
+        new Date(`${task.reviewStartedAt}T00:00:00`),
+      );
 
       if (daysInReview > 3) {
         insights.add("Review process may be blocked");
@@ -144,29 +250,31 @@ export default async function ClientPage({ params }: ClientPageProps) {
           Back to clients
         </Link>
         <div className={styles.noticeBox}>
-          Add your Supabase URL and publishable key to <code>.env.local</code> to load this client.
+          Add your Supabase URL and publishable key to <code>.env.local</code>{" "}
+          to load this client.
         </div>
       </section>
     );
   }
 
   const status = displayStatus(client.status);
-  const aiInsights = getAiInsights();
+  const savedTasks = await getClientTasks(client.id);
+  const tasks = savedTasks.length > 0 ? savedTasks.map(mapTask) : fallbackTasks;
+  const aiInsights = getAiInsights(tasks);
 
   return (
     <section className={styles.pageStack}>
-      <Link className={styles.textButton} href="/clients">
-        Back to clients
-      </Link>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <h2>{client.name}</h2>
+
+        <Link className={styles.textButton} href="/clients">
+          Back to clients
+        </Link>
+      </div>
 
       <article className={styles.panel}>
         <p className={styles.eyebrow}>Client overview</p>
-        <h2>{client.name}</h2>
         <dl className={styles.detailGrid}>
-          <div>
-            <dt>Name</dt>
-            <dd>{client.name}</dd>
-          </div>
           <div>
             <dt>Industry</dt>
             <dd>{client.industry ?? "Not assigned"}</dd>
@@ -198,10 +306,8 @@ export default async function ClientPage({ params }: ClientPageProps) {
       <article className={styles.panel}>
         <div className={styles.clientFileHeader}>
           <h3>Tasks for this client</h3>
-          <button className={styles.textButton} type="button">
-            Add task
-          </button>
         </div>
+        <AddTaskForm clientId={client.id} />
         <div className={styles.tableWrap}>
           <table className={styles.dataTable}>
             <thead>
@@ -215,7 +321,7 @@ export default async function ClientPage({ params }: ClientPageProps) {
             </thead>
             <tbody>
               {tasks.map((task) => (
-                <tr key={task.name}>
+                <tr key={task.id}>
                   <td>{task.name}</td>
                   <td>{task.assignedTo}</td>
                   <td>

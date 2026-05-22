@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import styles from "./clients.module.css";
+import AddClientForm from "./add-client-form";
 import ClientsView from "./clients-view";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
@@ -45,6 +46,8 @@ export default async function ClientsPage() {
           <option value="blocked">Blocked</option>
         </select>
       </div>
+
+      <AddClientForm isConfigured={isConfigured} />
 
       <ClientsView clients={clients} error={error} isConfigured={isConfigured} />
     </section>

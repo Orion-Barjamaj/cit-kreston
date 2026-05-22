@@ -48,7 +48,12 @@ const iconPaths: Record<IconName, React.ReactNode> = {
 
 function SidebarIcon({ name }: { name: IconName }) {
   return (
-    <svg className={styles.navIcon} aria-hidden="true" viewBox="0 0 20 20" fill="none">
+    <svg
+      className={styles.navIcon}
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+    >
       {iconPaths[name]}
     </svg>
   );
@@ -64,9 +69,7 @@ export default function WorkspaceShell({
   return (
     <div className={styles.workspace}>
       <aside className={styles.sidebar}>
-        <div className={styles.brand}>
-          <strong>Kreston</strong>
-        </div>
+        <div className={styles.brand}>Kreston 360</div>
 
         <nav className={styles.nav} aria-label="Main navigation">
           {navItems.map((item) => {
