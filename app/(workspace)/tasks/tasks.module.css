@@ -3,7 +3,6 @@
   max-width: none;
   gap: 0;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
   border-radius: 10px;
   background: #ffffff;
 }
@@ -40,16 +39,18 @@
 
 .darkButton {
   min-height: 40px;
-  border: 1px solid #111827;
-  border-radius: 8px;
+  border-radius: 7px;
   padding: 0 18px;
-  background: #17212f;
-  color: #ffffff;
+  background: #2F66E8;
+  color: #fff !important;
+  color: #1f2937;
   font: inherit;
   font-size: 14px;
+  box-shadow: none;
+  outline: none;
+  border: none;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.18), 0 8px 18px rgba(15, 23, 42, 0.16);
 }
 
 .boardToolbar {
@@ -101,10 +102,33 @@
   color: #1f2937;
 }
 
+.noticeBox,
+.errorBox {
+  margin: 14px 28px 0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.noticeBox {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.errorBox {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 .kanban {
   display: grid;
   grid-template-columns: repeat(3, minmax(260px, 1fr));
   min-height: 660px;
+  border-top: 1px solid #d9dee7;
+  border-bottom: 1px solid #d9dee7;
   overflow-x: auto;
   background: linear-gradient(90deg, #ffffff 0%, #fbfcfd 100%);
 }
@@ -113,9 +137,13 @@
   min-width: 260px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #d9dee7;
   background: #fbfcfd;
   transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.kanbanColumn:first-child {
+  border-left: 1px solid #d9dee7;
 }
 
 .kanbanColumnOver {
@@ -249,6 +277,12 @@
   font-weight: 700;
 }
 
+.taskDescription {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .taskMeta,
 .taskFooter {
   display: flex;
@@ -374,16 +408,31 @@
 }
 
 .taskModal input,
-.taskModal select {
+.taskModal select,
+.taskModal textarea {
   width: 100%;
-  min-height: 38px;
   border: 1px solid #d9dee7;
   border-radius: 8px;
-  padding: 0 10px;
   color: #111827;
   background: #ffffff;
   font: inherit;
   font-size: 13px;
+}
+
+.taskModal input,
+.taskModal select {
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.taskModal textarea {
+  min-height: 86px;
+  resize: vertical;
+  padding: 10px;
+}
+
+.fullField {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 980px) {
@@ -416,4 +465,5 @@
   .modalGrid {
     grid-template-columns: 1fr;
   }
+
 }

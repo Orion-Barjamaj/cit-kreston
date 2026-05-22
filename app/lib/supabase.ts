@@ -9,6 +9,20 @@ export type ClientRecord = {
   created_at: string | null;
 };
 
+export type TaskRecord = {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string | null;
+  priority: string | null;
+  deadline: string | null;
+  client_id: number | null;
+  assigned_to: number | null;
+  department_id: number | null;
+  created_by: number | null;
+  created_at: string | null;
+};
+
 export function getSupabaseServerClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
