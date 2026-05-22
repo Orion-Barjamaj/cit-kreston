@@ -48,14 +48,13 @@
 }
 
 .navLink {
-  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 10px;
   border-radius: 8px;
-  padding: 0 14px;
+  padding: 10px 14px;
   color: #424242;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   transition: background 160ms ease, color 160ms ease;
 }
@@ -66,8 +65,8 @@
 }
 
 .active {
-  color: #ffffff;
-  background: #2f66e8;
+  color: #ffffff !important;
+  background: #2f66e8 !important;
 }
 
 .iconSlot {
@@ -188,7 +187,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  min-height: 66px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
