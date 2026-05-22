@@ -201,6 +201,15 @@
   min-height: 36px;
 }
 
+.addTaskForm .primaryButton {
+  background: #2f66e8;
+  color: #ffffff;
+}
+
+.addTaskForm .primaryButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
 .formError,
 .formSuccess {
   color: #176d2e;

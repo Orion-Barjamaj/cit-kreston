@@ -39,12 +39,6 @@ export default async function ClientsPage() {
           <h2>Clients</h2>
           <p>Search, filter, and open a simple client file.</p>
         </div>
-        <select className={styles.selectControl} defaultValue="all">
-          <option value="all">All departments</option>
-          <option value="active">Active</option>
-          <option value="review">Review</option>
-          <option value="blocked">Blocked</option>
-        </select>
       </div>
 
       <AddClientForm isConfigured={isConfigured} />

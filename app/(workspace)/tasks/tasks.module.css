@@ -19,6 +19,15 @@
   composes: cardActions from "../workspace.module.css";
 }
 
+.cardActions button[type="submit"] {
+  background: #2f66e8;
+  color: #ffffff;
+}
+
+.cardActions button[type="submit"]:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
 .boardHeader {
   min-height: 82px;
   display: flex;
