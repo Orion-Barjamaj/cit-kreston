@@ -7,7 +7,7 @@ import styles from "./workspace.module.css";
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Clients", href: "/clients" },
-  { label: "Tasks", href: "/tasks" },
+  { label: "My Tasks", href: "/tasks" },
   { label: "Calendar", href: "/calendar" },
   { label: "Documents", href: "/documents" },
   { label: "Team", href: "/team" },
@@ -27,11 +27,7 @@ export default function WorkspaceShell({
     <div className={styles.workspace}>
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
-          <span className={styles.brandMark}>K</span>
-          <span>
-            <strong>KRESTON</strong>
-            <small>ALBANIA</small>
-          </span>
+          <strong>Kreston</strong>
         </div>
 
         <nav className={styles.nav} aria-label="Main navigation">
@@ -52,10 +48,28 @@ export default function WorkspaceShell({
           })}
         </nav>
 
+        <div className={styles.projectGroup}>
+          <div className={styles.projectHeader}>
+            <strong>Projects</strong>
+            <button type="button" aria-label="Add project">
+              +
+            </button>
+          </div>
+          <span>
+            <i className={styles.projectDotPink} aria-hidden="true" />
+            Audit Planning
+          </span>
+          <span>
+            <i className={styles.projectDotGreen} aria-hidden="true" />
+            Payroll Review
+          </span>
+        </div>
+
         <div className={styles.sidebarFooter}>
           <Link href="/help" className={styles.navLink}>
             <span className={styles.iconSlot} aria-hidden="true" />
             <span>Help & Support</span>
+            <small className={styles.helpBadge}>8</small>
           </Link>
 
           <Link href="/settings" className={styles.profileButton}>
@@ -75,11 +89,14 @@ export default function WorkspaceShell({
             <label className={styles.search}>
               <span className={styles.searchIcon} aria-hidden="true" />
               <input type="search" placeholder="Search clients, tasks..." />
+              <kbd>⌘ F</kbd>
             </label>
+            <button className={styles.primaryButton} type="button">
+              + New Project
+            </button>
             <button className={styles.iconButton} type="button" aria-label="Notifications" />
             <button className={styles.userMenu} type="button">
-              Arber M.
-              <span aria-hidden="true">⌄</span>
+              <span className={styles.avatar}>AM</span>
             </button>
           </div>
         </header>
