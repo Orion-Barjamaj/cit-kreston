@@ -1,9 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  type DragEndEvent,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import styles from "./tasks.module.css";
 
-type TaskStatus = "juniors" | "seniors" | "managers" | "todo";
+type TaskStatus = "juniors" | "seniors" | "managers";
 
 type Task = {
   id: string;
@@ -31,7 +42,7 @@ const emptyDraft: TaskDraft = {
   assignee: "",
   deadline: "",
   estimate: "",
-  status: "todo",
+  status: "juniors",
 };
 
 function getInitials(name: string) {
@@ -43,12 +54,92 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function TaskCard({ task }: { task: Task }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+  });
+
+  return (
+    <article
+      className={`${styles.taskCard} ${isDragging ? styles.taskCardDragging : ""}`}
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform) }}
+      {...listeners}
+      {...attributes}
+    >
+      <div className={styles.taskCardTop}>
+        <span className={styles.categoryTag}>{task.category}</span>
+        <span className={styles.avatar}>{getInitials(task.assignee)}</span>
+      </div>
+      <h4>{task.title}</h4>
+      <div className={styles.taskMeta}>
+        <span>{task.deadline}</span>
+        <span>{task.estimate}</span>
+      </div>
+      <div className={styles.taskFooter}>
+        <span>Log: {task.logged}</span>
+        <small>{task.comments}</small>
+      </div>
+    </article>
+  );
+}
+
+function KanbanColumn({
+  column,
+  tasks,
+  openTaskForm,
+}: {
+  column: (typeof statusColumns)[number];
+  tasks: Task[];
+  openTaskForm: (status: TaskStatus) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.id,
+  });
+
+  return (
+    <section className={`${styles.kanbanColumn} ${isOver ? styles.kanbanColumnOver : ""}`} ref={setNodeRef}>
+      <header className={styles.columnHeader}>
+        <div>
+          <h3>{column.title}</h3>
+          <span>{tasks.length}</span>
+        </div>
+        <button type="button" onClick={() => openTaskForm(column.id)} aria-label={`Add ${column.title} task`}>
+          +
+        </button>
+      </header>
+
+      <div className={styles.columnBody}>
+        {tasks.length > 0 ? (
+          tasks.map((task) => <TaskCard key={task.id} task={task} />)
+        ) : (
+          <div className={styles.emptyColumn}>
+            <span aria-hidden="true" />
+            <p>No tasks currently. Board is empty</p>
+            <button type="button" onClick={() => openTaskForm(column.id)}>
+              Create Task
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor),
+  );
 
-  function openTaskForm(status: TaskStatus = "todo") {
+  function openTaskForm(status: TaskStatus = "juniors") {
     setDraft({ ...emptyDraft, status });
     setIsFormOpen(true);
   }
@@ -77,6 +168,24 @@ export default function TasksPage() {
 
     setTasks((currentTasks) => [newTask, ...currentTasks]);
     closeTaskForm();
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over) {
+      return;
+    }
+
+    const nextStatus = over.id as TaskStatus;
+
+    if (!statusColumns.some((column) => column.id === nextStatus)) {
+      return;
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) => (task.id === active.id && task.status !== nextStatus ? { ...task, status: nextStatus } : task)),
+    );
   }
 
   return (
@@ -192,55 +301,18 @@ export default function TasksPage() {
         </div>
       ) : null}
 
-      <div className={styles.kanban} aria-label="Task board">
-        {statusColumns.map((column) => {
-          const columnTasks = tasks.filter((task) => task.status === column.id);
-
-          return (
-            <section className={styles.kanbanColumn} key={column.id}>
-              <header className={styles.columnHeader}>
-                <div>
-                  <h3>{column.title}</h3>
-                  <span>{columnTasks.length}</span>
-                </div>
-                <button type="button" onClick={() => openTaskForm(column.id)} aria-label={`Add ${column.title} task`}>
-                  +
-                </button>
-              </header>
-
-              <div className={styles.columnBody}>
-                {columnTasks.length > 0 ? (
-                  columnTasks.map((task) => (
-                    <article className={styles.taskCard} key={task.id}>
-                      <div className={styles.taskCardTop}>
-                        <span className={styles.categoryTag}>{task.category}</span>
-                        <span className={styles.avatar}>{getInitials(task.assignee)}</span>
-                      </div>
-                      <h4>{task.title}</h4>
-                      <div className={styles.taskMeta}>
-                        <span>{task.deadline}</span>
-                        <span>{task.estimate}</span>
-                      </div>
-                      <div className={styles.taskFooter}>
-                        <span>Log: {task.logged}</span>
-                        <small>{task.comments}</small>
-                      </div>
-                    </article>
-                  ))
-                ) : (
-                  <div className={styles.emptyColumn}>
-                    <span aria-hidden="true" />
-                    <p>No tasks currently. Board is empty</p>
-                    <button type="button" onClick={() => openTaskForm(column.id)}>
-                      Create Task
-                    </button>
-                  </div>
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <div className={styles.kanban} aria-label="Task board">
+          {statusColumns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              tasks={tasks.filter((task) => task.status === column.id)}
+              openTaskForm={openTaskForm}
+            />
+          ))}
+        </div>
+      </DndContext>
     </section>
   );
 }
