@@ -462,6 +462,10 @@
   border-bottom: 0;
 }
 
+.selectedRow td {
+  background: #f2f7fd;
+}
+
 .statusTag,
 .pillRow span {
   display: inline-flex;
@@ -499,6 +503,62 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.noticeBox,
+.errorBox {
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.noticeBox code {
+  font-family: var(--font-geist-mono);
+  font-size: 12px;
+}
+
+.errorBox {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
+
+.clientFileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.detailGrid div {
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.detailGrid dt {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detailGrid dd {
+  margin-top: 6px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .kanban {
@@ -659,7 +719,8 @@
   .statsGrid,
   .cardGrid,
   .kanban,
-  .progressList {
+  .progressList,
+  .detailGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -679,7 +740,8 @@
   .statsGrid,
   .cardGrid,
   .kanban,
-  .progressList {
+  .progressList,
+  .detailGrid {
     grid-template-columns: 1fr;
   }
 

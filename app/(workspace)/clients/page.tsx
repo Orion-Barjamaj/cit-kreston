@@ -1,13 +1,35 @@
+import { connection } from "next/server";
 import styles from "../workspace.module.css";
+import ClientsView from "./clients-view";
+import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
-const clients = [
-  ["Vodafone Albania", "Payroll", "Active", "Arber M.", "May 28"],
-  ["Balfin Group", "Audit", "Review", "Mira K.", "May 30"],
-  ["Tirana Retail", "Tax", "Blocked", "Arber M.", "Jun 03"],
-  ["Albtelecom", "Contracts", "Active", "Dorian P.", "Jun 06"],
-];
+async function getClients() {
+  await connection();
 
-export default function ClientsPage() {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return {
+      clients: [] as ClientRecord[],
+      isConfigured: false,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name, industry, status, assigned_manager_id, created_at")
+    .order("created_at", { ascending: false });
+
+  return {
+    clients: data ?? [],
+    error: error?.message,
+    isConfigured: true,
+  };
+}
+
+export default async function ClientsPage() {
+  const { clients, error, isConfigured } = await getClients();
+
   return (
     <section className={styles.pageStack}>
       <div className={styles.pageHeader}>
@@ -18,58 +40,13 @@ export default function ClientsPage() {
         </div>
         <select className={styles.selectControl} defaultValue="all">
           <option value="all">All departments</option>
-          <option value="payroll">Payroll</option>
-          <option value="audit">Audit</option>
-          <option value="tax">Tax</option>
+          <option value="active">Active</option>
+          <option value="review">Review</option>
+          <option value="blocked">Blocked</option>
         </select>
       </div>
 
-      <input className={styles.fullSearch} type="search" placeholder="Search clients" />
-
-      <div className={styles.tableWrap}>
-        <table className={styles.dataTable}>
-          <thead>
-            <tr>
-              <th>Client</th>
-              <th>Service</th>
-              <th>Status</th>
-              <th>Manager</th>
-              <th>Deadline</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.map(([name, service, status, manager, deadline]) => (
-              <tr key={name}>
-                <td>{name}</td>
-                <td>{service}</td>
-                <td>
-                  <span className={styles.statusTag}>{status}</span>
-                </td>
-                <td>{manager}</td>
-                <td>{deadline}</td>
-                <td>
-                  <button className={styles.textButton} type="button">
-                    Open file
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <article className={styles.panel}>
-        <h3>Client File Preview</h3>
-        <div className={styles.pillRow}>
-          <span>Overview</span>
-          <span>Department progress</span>
-          <span>Tasks</span>
-          <span>Documents</span>
-          <span>Notes</span>
-          <span>Timeline</span>
-        </div>
-      </article>
+      <ClientsView clients={clients} error={error} isConfigured={isConfigured} />
     </section>
   );
 }
