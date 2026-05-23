@@ -48,6 +48,7 @@ type ClientActivityRecord = {
 type ClientUserRecord = {
   id: number;
   name: string;
+  email: string | null;
   role: string;
   department_id: number | null;
 };
@@ -200,7 +201,7 @@ async function getClientUsers() {
 
   const { data } = await supabase
     .from("users")
-    .select("id, name, role, department_id")
+    .select("id, name, email, role, department_id")
     .order("name");
 
   return (data ?? []) as ClientUserRecord[];
@@ -212,6 +213,14 @@ function managerName(client: ClientRecord, usersById: Map<number, ClientUserReco
   }
 
   return usersById.get(client.assigned_manager_id)?.name ?? "Unassigned";
+}
+
+function managerEmail(client: ClientRecord, usersById: Map<number, ClientUserRecord>) {
+  if (!client.assigned_manager_id) {
+    return "No manager email";
+  }
+
+  return usersById.get(client.assigned_manager_id)?.email ?? "No manager email";
 }
 
 function displayStatus(status: string | null) {
@@ -363,6 +372,15 @@ function getTimelineItems(
   }) satisfies TimelineItem[];
 }
 
+function getUpcomingTasks(tasks: DisplayTask[]) {
+  return tasks
+    .filter((task) => task.deadline && task.status !== "done")
+    .map((task) => ({ task, date: new Date(`${task.deadline}T00:00:00`) }))
+    .filter(({ date }) => !Number.isNaN(date.getTime()))
+    .sort((first, second) => first.date.getTime() - second.date.getTime())
+    .slice(0, 4);
+}
+
 export default async function ClientPage({ params }: ClientPageProps) {
   const { id } = await params;
   const { client, isConfigured } = await getClient(id);
@@ -397,6 +415,8 @@ export default async function ClientPage({ params }: ClientPageProps) {
   const activities = savedActivities;
   const documents = savedDocuments;
   const timelineItems = getTimelineItems(activities, savedTimelineNotes);
+  const clientMessages = savedTimelineNotes.filter((note) => note.uploaded_by === "Client");
+  const upcomingTasks = getUpcomingTasks(tasks);
   const aiInsights = getAiInsights(tasks, documents, activities);
 
   return (
@@ -438,6 +458,10 @@ export default async function ClientPage({ params }: ClientPageProps) {
           <div>
             <dt>Manager</dt>
             <dd>{managerName(client, usersById)}</dd>
+          </div>
+          <div>
+            <dt>Manager Contact</dt>
+            <dd>{managerEmail(client, usersById)}</dd>
           </div>
         </dl>
       </article>
@@ -502,6 +526,50 @@ export default async function ClientPage({ params }: ClientPageProps) {
           </table>
         </div>
       </article>
+
+      <section className={styles.twoColumn}>
+        <article className={styles.panel}>
+          <h3>Client Messages</h3>
+          <ol className={styles.timelineList}>
+            {clientMessages.length > 0 ? (
+              clientMessages.map((message) => (
+                <li key={message.id}>
+                  <time>{formatDetailDate(message.created_at)}</time>
+                  <span>{message.text}</span>
+                  <small>Client</small>
+                </li>
+              ))
+            ) : (
+              <li>
+                <time>-</time>
+                <span>No client questions or follow-ups yet.</span>
+                <small>Client</small>
+              </li>
+            )}
+          </ol>
+        </article>
+
+        <article className={styles.panel}>
+          <h3>Deadlines & Upcoming Events</h3>
+          <ol className={styles.timelineList}>
+            {upcomingTasks.length > 0 ? (
+              upcomingTasks.map(({ task }) => (
+                <li key={task.id}>
+                  <time>{task.deadlineLabel}</time>
+                  <span>{task.name}</span>
+                  <small>{task.status}</small>
+                </li>
+              ))
+            ) : (
+              <li>
+                <time>-</time>
+                <span>No upcoming deadlines.</span>
+                <small>clear</small>
+              </li>
+            )}
+          </ol>
+        </article>
+      </section>
 
       <section className={styles.twoColumn}>
         <article className={styles.panel}>
