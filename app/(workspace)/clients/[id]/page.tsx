@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AddDocumentForm, AddTimelineNoteForm } from "../add-document-note-forms";
-import AddTaskForm from "../add-task-form";
+import AddTaskForm, { type TaskAssignee } from "../add-task-form";
 import DocumentSummaryPopover from "../document-summary-popover";
 import styles from "../clients.module.css";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
@@ -45,6 +45,13 @@ type ClientActivityRecord = {
   created_at: string | null;
 };
 
+type ClientUserRecord = {
+  id: number;
+  name: string;
+  role: string;
+  department_id: number | null;
+};
+
 type ClientTimelineNoteRecord = {
   id: number;
   client_id: number | null;
@@ -81,107 +88,6 @@ type DisplayTask = {
   deadlineLabel: string;
   reviewStartedAt: string | null;
 };
-
-const fallbackTasks: DisplayTask[] = [
-  {
-    id: "fallback-payroll",
-    name: "Review payroll documents",
-    assignedTo: "Sara",
-    status: "review",
-    deadline: "2026-05-24",
-    deadlineLabel: "May 24",
-    reviewStartedAt: "2026-05-18",
-  },
-  {
-    id: "fallback-audit",
-    name: "Prepare audit checklist",
-    assignedTo: "Andi",
-    status: "progress",
-    deadline: "2026-05-21",
-    deadlineLabel: "May 21",
-    reviewStartedAt: null,
-  },
-  {
-    id: "fallback-tax",
-    name: "Confirm tax declaration",
-    assignedTo: "Arber",
-    status: "todo",
-    deadline: "2026-05-28",
-    deadlineLabel: "May 28",
-    reviewStartedAt: null,
-  },
-];
-
-const fallbackActivities: ClientActivityRecord[] = [
-  {
-    id: 1,
-    client_id: null,
-    user_id: 3,
-    type: "update",
-    content: "Contract signed",
-    created_at: "2026-05-20T00:00:00",
-  },
-  {
-    id: 2,
-    client_id: null,
-    user_id: 2,
-    type: "update",
-    content: "Documents uploaded",
-    created_at: "2026-05-21T00:00:00",
-  },
-  {
-    id: 3,
-    client_id: null,
-    user_id: 4,
-    type: "comment",
-    content: "Payroll files checked",
-    created_at: "2026-05-22T00:00:00",
-  },
-  {
-    id: 4,
-    client_id: null,
-    user_id: 1,
-    type: "alert",
-    content: "Review pending",
-    created_at: "2026-05-23T00:00:00",
-  },
-];
-
-const fallbackDocuments: ClientDocumentRecord[] = [
-  {
-    id: 1,
-    client_id: null,
-    uploaded_by: 1,
-    file_name: "signed_contract.pdf",
-    file_url: null,
-    type: "contract",
-    created_at: "2026-05-20T00:00:00",
-    last_updated: "2026-05-20T00:00:00",
-    summary: "no sum",
-  },
-  {
-    id: 2,
-    client_id: null,
-    uploaded_by: 2,
-    file_name: "company_extract.pdf",
-    file_url: null,
-    type: "report",
-    created_at: "2026-05-21T00:00:00",
-    last_updated: "2026-05-20T00:00:00",
-    summary: "no sum",
-  },
-  {
-    id: 3,
-    client_id: null,
-    uploaded_by: 4,
-    file_name: "payroll_may.xlsx",
-    file_url: null,
-    type: "payroll",
-    created_at: "2026-05-22T00:00:00",
-    last_updated: "2026-05-20T00:00:00",
-    summary: "no sum",
-  },
-];
 
 async function getClient(id: string) {
   await connection();
@@ -285,10 +191,27 @@ async function getClientDocuments(clientId: number) {
   return (data ?? []) as ClientDocumentRecord[];
 }
 
-function managerName(client: ClientRecord) {
-  return client.assigned_manager_id
-    ? `Manager #${client.assigned_manager_id}`
-    : "Unassigned";
+async function getClientUsers() {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return [] as ClientUserRecord[];
+  }
+
+  const { data } = await supabase
+    .from("users")
+    .select("id, name, role, department_id")
+    .order("name");
+
+  return (data ?? []) as ClientUserRecord[];
+}
+
+function managerName(client: ClientRecord, usersById: Map<number, ClientUserRecord>) {
+  if (!client.assigned_manager_id) {
+    return "Unassigned";
+  }
+
+  return usersById.get(client.assigned_manager_id)?.name ?? "Unassigned";
 }
 
 function displayStatus(status: string | null) {
@@ -341,17 +264,23 @@ function normalizeTaskDate(value: string | null) {
   return date.toISOString().slice(0, 10);
 }
 
-function mapTask(task: ClientTaskRecord): DisplayTask {
+function mapTask(task: ClientTaskRecord, usersById: Map<number, ClientUserRecord>): DisplayTask {
+  const assignedUser = task.assigned_to ? usersById.get(task.assigned_to) : null;
+
   return {
     id: String(task.id),
     name: task.title,
-    assignedTo: task.assigned_to ? `User #${task.assigned_to}` : "Unassigned",
+    assignedTo: assignedUser ? `${assignedUser.name} - ${displayRole(assignedUser.role)}` : "Unassigned",
     status: task.status ?? "todo",
     deadline: normalizeTaskDate(task.deadline),
     deadlineLabel: formatTaskDate(task.deadline),
     reviewStartedAt:
       task.status === "review" ? normalizeTaskDate(task.created_at) : null,
   };
+}
+
+function displayRole(role: string) {
+  return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function getAiInsights(
@@ -457,11 +386,16 @@ export default async function ClientPage({ params }: ClientPageProps) {
   const savedActivities = await getClientActivities(client.id);
   const savedTimelineNotes = await getClientTimelineNotes(client.id);
   const savedDocuments = await getClientDocuments(client.id);
-  const tasks = savedTasks.length > 0 ? savedTasks.map(mapTask) : fallbackTasks;
-  const activities =
-    savedActivities.length > 0 ? savedActivities : fallbackActivities;
-  const documents =
-    savedDocuments.length > 0 ? savedDocuments : fallbackDocuments;
+  const teamMembers = await getClientUsers();
+  const usersById = new Map(teamMembers.map((user) => [user.id, user]));
+  const taskAssignees: TaskAssignee[] = teamMembers.map((user) => ({
+    id: user.id,
+    name: user.name,
+    role: user.role,
+  }));
+  const tasks = savedTasks.map((task) => mapTask(task, usersById));
+  const activities = savedActivities;
+  const documents = savedDocuments;
   const timelineItems = getTimelineItems(activities, savedTimelineNotes);
   const aiInsights = getAiInsights(tasks, documents, activities);
 
@@ -503,7 +437,7 @@ export default async function ClientPage({ params }: ClientPageProps) {
           </div>
           <div>
             <dt>Manager</dt>
-            <dd>{managerName(client)}</dd>
+            <dd>{managerName(client, usersById)}</dd>
           </div>
         </dl>
       </article>
@@ -536,7 +470,7 @@ export default async function ClientPage({ params }: ClientPageProps) {
             <h3>Tasks for this client</h3>
           </div>
         </div>
-        <AddTaskForm clientId={client.id} />
+        <AddTaskForm assignees={taskAssignees} clientId={client.id} />
         <div className={styles.tableWrap}>
           <table className={styles.dataTable}>
             <thead>

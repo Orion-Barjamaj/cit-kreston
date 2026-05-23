@@ -9,7 +9,19 @@ const initialState: CreateClientState = {
   status: "idle",
 };
 
-export default function AddClientForm({ isConfigured }: { isConfigured: boolean }) {
+export type ClientManagerOption = {
+  id: number;
+  name: string;
+  role: string;
+};
+
+export default function AddClientForm({
+  isConfigured,
+  managers,
+}: {
+  isConfigured: boolean;
+  managers: ClientManagerOption[];
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(createClient, initialState);
   const actionStatus = state.status;
@@ -41,14 +53,15 @@ export default function AddClientForm({ isConfigured }: { isConfigured: boolean 
           </select>
         </label>
         <label>
-          Manager ID
-          <input
-            min="1"
-            name="assigned_manager_id"
-            placeholder="Optional"
-            type="number"
-            disabled={!isConfigured || isPending}
-          />
+          Manager
+          <select name="assigned_manager_id" defaultValue="" disabled={!isConfigured || isPending}>
+            <option value="">Unassigned</option>
+            {managers.map((manager) => (
+              <option key={manager.id} value={manager.id}>
+                {manager.name} - {manager.role.charAt(0).toUpperCase() + manager.role.slice(1)}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 

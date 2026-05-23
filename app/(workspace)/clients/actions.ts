@@ -15,7 +15,6 @@ export type CreateActivityState = CreateClientState;
 export type CreateTimelineNoteState = CreateClientState;
 
 const validStatuses = new Set(["active", "delayed", "onboarding", "completed"]);
-const validTaskStatuses = new Set(["todo", "progress", "review", "done"]);
 const validTaskPriorities = new Set(["low", "medium", "high"]);
 const validDocumentTypes = new Set([
   "contract",
@@ -75,7 +74,7 @@ export async function createClient(
   ) {
     return {
       status: "error",
-      message: "Manager ID must be valid.",
+      message: "Choose a valid manager.",
     };
   }
 
@@ -148,11 +147,9 @@ export async function createClientTask(
   const clientId = getOptionalPositiveInt(formData, "client_id");
   const title = getTextValue(formData, "title");
   const description = getTextValue(formData, "description");
-  const status = getTextValue(formData, "status") || "todo";
   const priority = getTextValue(formData, "priority") || "medium";
   const deadline = getTextValue(formData, "deadline");
   const assignedTo = getOptionalPositiveInt(formData, "assigned_to");
-  const departmentId = getOptionalPositiveInt(formData, "department_id");
 
   if (!clientId) {
     return {
@@ -168,13 +165,6 @@ export async function createClientTask(
     };
   }
 
-  if (!validTaskStatuses.has(status)) {
-    return {
-      status: "error",
-      message: "Choose a valid task status.",
-    };
-  }
-
   if (!validTaskPriorities.has(priority)) {
     return {
       status: "error",
@@ -182,22 +172,35 @@ export async function createClientTask(
     };
   }
 
-  if (assignedTo === undefined || departmentId === undefined) {
+  if (!assignedTo) {
     return {
       status: "error",
-      message: "Assigned user and department IDs must be positive numbers.",
+      message: "Choose a team member.",
+    };
+  }
+
+  const { data: assignedUser, error: assignedUserError } = await supabase
+    .from("users")
+    .select("id, department_id")
+    .eq("id", assignedTo)
+    .single();
+
+  if (assignedUserError || !assignedUser) {
+    return {
+      status: "error",
+      message: "Selected team member does not exist.",
     };
   }
 
   const { error } = await supabase.from("tasks").insert({
     title,
     description: description || null,
-    status,
+    status: "todo",
     priority,
     deadline: deadline ? `${deadline}T00:00:00` : null,
     client_id: clientId,
     assigned_to: assignedTo,
-    department_id: departmentId,
+    department_id: assignedUser.department_id,
     created_by: null,
   });
 

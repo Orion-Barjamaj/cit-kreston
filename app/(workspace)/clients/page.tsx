@@ -1,11 +1,12 @@
 import { connection } from "next/server";
 import styles from "./clients.module.css";
-import AddClientForm from "./add-client-form";
+import AddClientForm, { type ClientManagerOption } from "./add-client-form";
 import ClientsView from "./clients-view";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
 type ClientListRecord = ClientRecord & {
   last_updated_at: string | null;
+  manager_name: string | null;
   risk_score: number;
 };
 
@@ -58,7 +59,8 @@ async function getClients() {
 
   if (!supabase) {
     return {
-      clients: [] as ClientRecord[],
+      clients: [] as ClientListRecord[],
+      managers: [] as ClientManagerOption[],
       isConfigured: false,
     };
   }
@@ -69,11 +71,20 @@ async function getClients() {
     .order("created_at", { ascending: false });
 
   const clients = (data ?? []) as ClientRecord[];
-  const [tasksResult, activitiesResult, documentsResult] = await Promise.all([
+  const [tasksResult, activitiesResult, documentsResult, usersResult] = await Promise.all([
     supabase.from("tasks").select("client_id, created_at"),
     supabase.from("activities").select("client_id, created_at"),
     supabase.from("documents").select("client_id, created_at"),
+    supabase.from("users").select("id, name, role"),
   ]);
+  const usersById = new Map(((usersResult.data ?? []) as { id: number; name: string }[]).map((user) => [user.id, user.name]));
+  const managers = ((usersResult.data ?? []) as Array<{ id: number; name: string; role?: string | null }>)
+    .filter((user) => (user.role ?? "").toLowerCase() === "manager")
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      role: user.role ?? "manager",
+    }));
 
   const updatesByClient = new Map<number, Array<string | null>>();
 
@@ -97,6 +108,7 @@ async function getClients() {
     return {
       ...client,
       last_updated_at: lastUpdatedAt,
+      manager_name: client.assigned_manager_id ? usersById.get(client.assigned_manager_id) ?? null : null,
       risk_score: getRiskScore(client, lastUpdatedAt),
     };
   });
@@ -105,11 +117,12 @@ async function getClients() {
     clients: clientList,
     error: error?.message,
     isConfigured: true,
+    managers,
   };
 }
 
 export default async function ClientsPage() {
-  const { clients, error, isConfigured } = await getClients();
+  const { clients, error, isConfigured, managers } = await getClients();
 
   return (
     <section className={styles.pageStack}>
@@ -121,7 +134,7 @@ export default async function ClientsPage() {
         </div>
       </div>
 
-      <AddClientForm isConfigured={isConfigured} />
+      <AddClientForm isConfigured={isConfigured} managers={managers} />
 
       <ClientsView clients={clients} error={error} isConfigured={isConfigured} />
     </section>

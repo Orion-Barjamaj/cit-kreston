@@ -8,12 +8,10 @@ export type TaskStatus = "juniors" | "seniors" | "managers";
 export type CreateTaskInput = {
   title: string;
   description: string;
-  status: TaskStatus;
   priority: string;
   deadline: string;
   clientId: string;
   assignedTo: string;
-  departmentId: string;
 };
 
 export type TaskActionState = {
@@ -53,6 +51,20 @@ async function recordExists(table: "clients" | "departments" | "users", id: numb
   return !error && data !== null;
 }
 
+function getStatusFromRole(role: string | null): TaskStatus {
+  const normalizedRole = (role ?? "").toLowerCase();
+
+  if (normalizedRole === "senior") {
+    return "seniors";
+  }
+
+  if (normalizedRole === "manager" || normalizedRole === "partner") {
+    return "managers";
+  }
+
+  return "juniors";
+}
+
 export async function createTask(input: CreateTaskInput): Promise<TaskActionState> {
   const supabase = getSupabaseServerClient();
 
@@ -69,19 +81,11 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
   const deadline = cleanText(input.deadline);
   const clientId = getOptionalPositiveInt(input.clientId);
   const assignedTo = getOptionalPositiveInt(input.assignedTo);
-  const departmentId = getOptionalPositiveInt(input.departmentId);
 
   if (!title) {
     return {
       status: "error",
       message: "Task title is required.",
-    };
-  }
-
-  if (!validTaskStatuses.has(input.status)) {
-    return {
-      status: "error",
-      message: "Choose a valid task status.",
     };
   }
 
@@ -92,10 +96,17 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
     };
   }
 
-  if (clientId === undefined || assignedTo === undefined || departmentId === undefined) {
+  if (clientId === undefined || assignedTo === undefined) {
     return {
       status: "error",
-      message: "Client, assigned user, and department IDs must be positive numbers.",
+      message: "Client and assigned user must be valid.",
+    };
+  }
+
+  if (!assignedTo) {
+    return {
+      status: "error",
+      message: "Choose a team member.",
     };
   }
 
@@ -106,17 +117,16 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
     };
   }
 
-  if (assignedTo !== null && !(await recordExists("users", assignedTo))) {
-    return {
-      status: "error",
-      message: `Assigned user ID ${assignedTo} does not exist. Leave Assigned user ID blank or choose an existing user.`,
-    };
-  }
+  const { data: assignedUser, error: assignedUserError } = await supabase
+    .from("users")
+    .select("id, role, department_id")
+    .eq("id", assignedTo)
+    .single();
 
-  if (departmentId !== null && !(await recordExists("departments", departmentId))) {
+  if (assignedUserError || !assignedUser) {
     return {
       status: "error",
-      message: `Department ID ${departmentId} does not exist. Leave Department ID blank or choose an existing department.`,
+      message: "Selected team member does not exist.",
     };
   }
 
@@ -125,12 +135,12 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
     .insert({
       title,
       description: description || null,
-      status: input.status,
+      status: getStatusFromRole(assignedUser.role),
       priority,
       deadline: deadline ? `${deadline}T00:00:00` : null,
       client_id: clientId,
       assigned_to: assignedTo,
-      department_id: departmentId,
+      department_id: assignedUser.department_id,
       created_by: null,
     })
     .select("id, title, description, status, priority, deadline, client_id, assigned_to, department_id, created_by, created_at")

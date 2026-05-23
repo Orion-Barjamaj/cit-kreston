@@ -4,12 +4,28 @@ import { useActionState, useEffect, useRef } from "react";
 import { createClientTask, type CreateTaskState } from "./actions";
 import styles from "./clients.module.css";
 
+export type TaskAssignee = {
+  id: number;
+  name: string;
+  role: string;
+};
+
 const initialState: CreateTaskState = {
   message: "",
   status: "idle",
 };
 
-export default function AddTaskForm({ clientId }: { clientId: number }) {
+function formatRole(role: string) {
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+export default function AddTaskForm({
+  assignees,
+  clientId,
+}: {
+  assignees: TaskAssignee[];
+  clientId: number;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(createClientTask, initialState);
   const actionStatus = state.status;
@@ -33,12 +49,14 @@ export default function AddTaskForm({ clientId }: { clientId: number }) {
           <input name="deadline" type="date" disabled={isPending} />
         </label>
         <label>
-          Status
-          <select name="status" defaultValue="todo" disabled={isPending}>
-            <option value="todo">To do</option>
-            <option value="progress">Progress</option>
-            <option value="review">Review</option>
-            <option value="done">Done</option>
+          Assigned team member
+          <select name="assigned_to" required disabled={isPending || assignees.length === 0}>
+            <option value="">Choose a person</option>
+            {assignees.map((assignee) => (
+              <option key={assignee.id} value={assignee.id}>
+                {assignee.name} - {formatRole(assignee.role)}
+              </option>
+            ))}
           </select>
         </label>
         <label>
@@ -48,14 +66,6 @@ export default function AddTaskForm({ clientId }: { clientId: number }) {
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
-        </label>
-        <label>
-          Assigned user ID
-          <input min="1" name="assigned_to" placeholder="Optional" type="number" disabled={isPending} />
-        </label>
-        <label>
-          Department ID
-          <input min="1" name="department_id" placeholder="Optional" type="number" disabled={isPending} />
         </label>
       </div>
       <label>

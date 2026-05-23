@@ -14,6 +14,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { TaskRecord } from "@/app/lib/supabase";
 import { createTask, updateTaskStatus, type TaskStatus } from "./actions";
+import type { TaskMemberOption } from "./page";
 import styles from "./tasks.module.css";
 
 type BoardTask = {
@@ -33,14 +34,13 @@ type TaskDraft = {
   deadline: string;
   clientId: string;
   assignedTo: string;
-  departmentId: string;
-  status: TaskStatus;
 };
 
 type TasksBoardProps = {
   error?: string;
   initialTasks: TaskRecord[];
   isConfigured: boolean;
+  members: TaskMemberOption[];
 };
 
 const statusColumns: { id: TaskStatus; title: string }[] = [
@@ -58,8 +58,6 @@ const emptyDraft: TaskDraft = {
   deadline: "",
   clientId: "",
   assignedTo: "",
-  departmentId: "",
-  status: "juniors",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en", {
@@ -94,8 +92,13 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function mapTaskRecord(task: TaskRecord): BoardTask {
-  const assignee = task.assigned_to ? `User ${task.assigned_to}` : "Unassigned";
+function getMemberLabel(member: TaskMemberOption) {
+  return `${member.name} - ${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`;
+}
+
+function mapTaskRecord(task: TaskRecord, membersById: Map<number, TaskMemberOption>): BoardTask {
+  const assignedMember = task.assigned_to ? membersById.get(task.assigned_to) : null;
+  const assignee = assignedMember ? assignedMember.name : "Unassigned";
 
   return {
     id: task.id,
@@ -144,7 +147,7 @@ function KanbanColumn({
 }: {
   column: (typeof statusColumns)[number];
   tasks: BoardTask[];
-  openTaskForm: (status: TaskStatus) => void;
+  openTaskForm: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -157,7 +160,7 @@ function KanbanColumn({
           <h3>{column.title}</h3>
           <span>{tasks.length}</span>
         </div>
-        <button type="button" onClick={() => openTaskForm(column.id)} aria-label={`Add ${column.title} task`}>
+        <button type="button" onClick={openTaskForm} aria-label={`Add ${column.title} task`}>
           +
         </button>
       </header>
@@ -169,7 +172,7 @@ function KanbanColumn({
           <div className={styles.emptyColumn}>
             <span aria-hidden="true" />
             <p>No tasks currently. Board is empty</p>
-            <button type="button" onClick={() => openTaskForm(column.id)}>
+            <button type="button" onClick={openTaskForm}>
               Create Task
             </button>
           </div>
@@ -179,8 +182,9 @@ function KanbanColumn({
   );
 }
 
-export default function TasksBoard({ error, initialTasks, isConfigured }: TasksBoardProps) {
-  const [tasks, setTasks] = useState<BoardTask[]>(() => initialTasks.map(mapTaskRecord));
+export default function TasksBoard({ error, initialTasks, isConfigured, members }: TasksBoardProps) {
+  const membersById = new Map(members.map((member) => [member.id, member]));
+  const [tasks, setTasks] = useState<BoardTask[]>(() => initialTasks.map((task) => mapTaskRecord(task, membersById)));
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [draft, setDraft] = useState(emptyDraft);
   const [message, setMessage] = useState(error ?? "");
@@ -194,8 +198,8 @@ export default function TasksBoard({ error, initialTasks, isConfigured }: TasksB
     useSensor(KeyboardSensor),
   );
 
-  function openTaskForm(status: TaskStatus = "juniors") {
-    setDraft({ ...emptyDraft, status });
+  function openTaskForm() {
+    setDraft(emptyDraft);
     setMessage("");
     setIsFormOpen(true);
   }
@@ -217,7 +221,7 @@ export default function TasksBoard({ error, initialTasks, isConfigured }: TasksB
       const createdTask = result.task;
 
       if (createdTask) {
-        setTasks((currentTasks) => [mapTaskRecord(createdTask), ...currentTasks]);
+        setTasks((currentTasks) => [mapTaskRecord(createdTask, membersById), ...currentTasks]);
       }
 
       closeTaskForm();
@@ -325,15 +329,20 @@ export default function TasksBoard({ error, initialTasks, isConfigured }: TasksB
                 </select>
               </label>
               <label>
-                Assigned user ID
-                <input
-                  min="1"
-                  placeholder="Leave blank or enter existing user ID"
-                  type="number"
+                Assigned team member
+                <select
                   value={draft.assignedTo}
                   onChange={(event) => setDraft({ ...draft, assignedTo: event.target.value })}
-                  disabled={isPending}
-                />
+                  required
+                  disabled={isPending || members.length === 0}
+                >
+                  <option value="">Choose a person</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {getMemberLabel(member)}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 Client ID
@@ -345,31 +354,6 @@ export default function TasksBoard({ error, initialTasks, isConfigured }: TasksB
                   onChange={(event) => setDraft({ ...draft, clientId: event.target.value })}
                   disabled={isPending}
                 />
-              </label>
-              <label>
-                Department ID
-                <input
-                  min="1"
-                  placeholder="Leave blank or enter existing department ID"
-                  type="number"
-                  value={draft.departmentId}
-                  onChange={(event) => setDraft({ ...draft, departmentId: event.target.value })}
-                  disabled={isPending}
-                />
-              </label>
-              <label>
-                Status
-                <select
-                  value={draft.status}
-                  onChange={(event) => setDraft({ ...draft, status: event.target.value as TaskStatus })}
-                  disabled={isPending}
-                >
-                  {statusColumns.map((column) => (
-                    <option key={column.id} value={column.id}>
-                      {column.title}
-                    </option>
-                  ))}
-                </select>
               </label>
               <label className={styles.fullField}>
                 Description

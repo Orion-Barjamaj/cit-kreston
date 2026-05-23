@@ -6,8 +6,9 @@ import styles from "./clients.module.css";
 import type { ClientRecord } from "@/app/lib/supabase";
 
 type ClientListRecord = ClientRecord & {
-  last_updated?: string | null;
-  risk?: number;
+  last_updated_at?: string | null;
+  manager_name?: string | null;
+  risk_score?: number;
 };
 
 type ClientsViewProps = {
@@ -39,8 +40,8 @@ function formatDate(value: string | null) {
   return dateFormatter.format(date);
 }
 
-function formatField(value: string | number | null) {
-  if (value === null || value === "") {
+function formatField(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === "") {
     return "Not assigned";
   }
 
@@ -52,10 +53,10 @@ function getSearchText(client: ClientListRecord) {
     client.name,
     client.industry,
     client.status ?? "active",
-    client.assigned_manager_id,
+    client.manager_name,
     client.created_at,
-    client.last_updated,
-    client.risk,
+    client.last_updated_at,
+    client.risk_score,
   ]
     .filter((value) => value !== null && value !== undefined)
     .join(" ")
@@ -110,7 +111,7 @@ function getSortValue(client: ClientListRecord, key: SortKey) {
   }
 
   if (key === "manager") {
-    return client.assigned_manager_id ?? 0;
+    return client.manager_name ?? "";
   }
 
   if (key === "created") {
@@ -118,10 +119,10 @@ function getSortValue(client: ClientListRecord, key: SortKey) {
   }
 
   if (key === "updated") {
-    return new Date(client.last_updated ?? client.created_at ?? 0).getTime();
+    return new Date(client.last_updated_at ?? client.created_at ?? 0).getTime();
   }
 
-  return client.risk ?? 9;
+  return client.risk_score ?? 9;
 }
 
 function compareClients(first: ClientListRecord, second: ClientListRecord, key: SortKey) {
@@ -217,7 +218,7 @@ export default function ClientsView({
               </th>
               <th>
                 <button className={styles.sortHeader} type="button" onClick={() => changeSort("manager")}>
-                  Manager ID{sortLabel("manager")}
+                  Manager{sortLabel("manager")}
                 </button>
               </th>
               <th>
@@ -258,14 +259,14 @@ export default function ClientsView({
                         {status}
                       </span>
                     </td>
-                    <td>{formatField(client.assigned_manager_id)}</td>
+                    <td>{formatField(client.manager_name)}</td>
                     <td>{formatDate(client.created_at)}</td>
                     <td>
-                      {formatDate(client.last_updated ?? client.created_at)}
+                      {formatDate(client.last_updated_at ?? client.created_at)}
                     </td>
                     <td>
-                      <span className={getRiskClassName(client.risk)}>
-                        {client.risk ?? 9}/10
+                      <span className={getRiskClassName(client.risk_score)}>
+                        {client.risk_score ?? 9}/10
                       </span>
                     </td>
                   </tr>

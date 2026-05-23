@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./workspace.module.css";
 
-type IconName = "calendar" | "clients" | "dashboard" | "reports" | "tasks";
+type IconName = "calendar" | "clients" | "dashboard" | "reports" | "tasks" | "team";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "Clients", href: "/clients", icon: "clients" },
+  { label: "Team", href: "/team", icon: "team" },
   { label: "My Tasks", href: "/tasks", icon: "tasks" },
   { label: "Reports", href: "/reports", icon: "reports" },
 ] satisfies { label: string; href: string; icon: IconName }[];
@@ -41,6 +42,12 @@ const iconPaths: Record<IconName, React.ReactNode> = {
     <>
       <path d="M4 5h12v10.5A1.5 1.5 0 0 1 14.5 17h-9A1.5 1.5 0 0 1 4 15.5V5Z" />
       <path d="m7 10 1.4 1.4L13 7.8M7 14h6" />
+    </>
+  ),
+  team: (
+    <>
+      <path d="M10 4.2v4.1M6.2 11.8h7.6M6.2 11.8v3.9M13.8 11.8v3.9" />
+      <path d="M8.2 2.8h3.6v2.8H8.2V2.8ZM4.4 14.4H8v2.8H4.4v-2.8ZM12 14.4h3.6v2.8H12v-2.8Z" />
     </>
   ),
 };
