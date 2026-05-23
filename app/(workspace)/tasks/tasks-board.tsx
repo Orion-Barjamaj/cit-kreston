@@ -14,11 +14,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { TaskRecord } from "@/app/lib/supabase";
 import { createTask, updateTaskStatus, type TaskStatus } from "./actions";
-import type { TaskMemberOption } from "./page";
+import type { TaskDepartmentOption, TaskMemberOption } from "./page";
 import styles from "./tasks.module.css";
 
 type BoardTask = {
   assignedTo: number | null;
+  departmentId: number | null;
   id: number;
   title: string;
   description: string;
@@ -35,6 +36,7 @@ type TaskDraft = {
   deadline: string;
   clientId: string;
   assignedTo: string;
+  departmentId: string;
 };
 
 type HandoffDraft = {
@@ -44,16 +46,31 @@ type HandoffDraft = {
 };
 
 type TasksBoardProps = {
+  departments: TaskDepartmentOption[];
   error?: string;
   initialTasks: TaskRecord[];
   isConfigured: boolean;
   members: TaskMemberOption[];
 };
 
+type DepartmentTab = {
+  id: string;
+  label: string;
+};
+
 const statusColumns: { id: TaskStatus; title: string }[] = [
   { id: "juniors", title: "Juniors" },
   { id: "seniors", title: "Seniors" },
   { id: "managers", title: "Managers" },
+];
+
+const departmentTabs: DepartmentTab[] = [
+  { id: "all", label: "All" },
+  { id: "audit-advisory", label: "Audit & Advisory" },
+  { id: "accounting-tax", label: "Accounting & Tax" },
+  { id: "bookkeeping-payroll", label: "Bookkeeping & Payroll" },
+  { id: "legal", label: "Legal" },
+  { id: "advisory", label: "Advisory" },
 ];
 
 const validStatuses = new Set<TaskStatus>(statusColumns.map((column) => column.id));
@@ -65,6 +82,7 @@ const emptyDraft: TaskDraft = {
   deadline: "",
   clientId: "",
   assignedTo: "",
+  departmentId: "",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en", {
@@ -121,6 +139,30 @@ function getMembersForStatus(members: TaskMemberOption[], status: TaskStatus) {
   return members.filter((member) => getStatusFromRole(member.role) === status);
 }
 
+function normalizeDepartmentName(name: string) {
+  return name.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function getDepartmentIdForTab(tab: DepartmentTab, departments: TaskDepartmentOption[]) {
+  if (tab.id === "all") {
+    return "all";
+  }
+
+  const normalizedLabel = normalizeDepartmentName(tab.label);
+  const exactDepartment = departments.find((department) => normalizeDepartmentName(department.name) === normalizedLabel);
+
+  if (exactDepartment) {
+    return exactDepartment.id;
+  }
+
+  const labelWords = normalizedLabel.split(" ");
+  return departments.find((department) => {
+    const normalizedDepartment = normalizeDepartmentName(department.name);
+
+    return labelWords.every((word) => normalizedDepartment.includes(word));
+  })?.id;
+}
+
 function getPriorityClassName(priority: string) {
   const normalizedPriority = priority.toLowerCase();
 
@@ -141,6 +183,7 @@ function mapTaskRecord(task: TaskRecord, membersById: Map<number, TaskMemberOpti
 
   return {
     assignedTo: task.assigned_to,
+    departmentId: task.department_id,
     id: task.id,
     title: task.title,
     description: task.description?.trim() || "No description",
@@ -222,9 +265,10 @@ function KanbanColumn({
   );
 }
 
-export default function TasksBoard({ error, initialTasks, isConfigured, members }: TasksBoardProps) {
+export default function TasksBoard({ departments, error, initialTasks, isConfigured, members }: TasksBoardProps) {
   const membersById = new Map(members.map((member) => [member.id, member]));
   const [tasks, setTasks] = useState<BoardTask[]>(() => initialTasks.map((task) => mapTaskRecord(task, membersById)));
+  const [selectedDepartmentTab, setSelectedDepartmentTab] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null);
   const [draft, setDraft] = useState(emptyDraft);
@@ -238,6 +282,10 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
     }),
     useSensor(KeyboardSensor),
   );
+  const selectedDepartment = departmentTabs.find((tab) => tab.id === selectedDepartmentTab) ?? departmentTabs[0];
+  const selectedDepartmentId = getDepartmentIdForTab(selectedDepartment, departments);
+  const filteredTasks =
+    selectedDepartmentId === "all" ? tasks : tasks.filter((task) => task.departmentId === selectedDepartmentId);
 
   function openTaskForm() {
     setDraft(emptyDraft);
@@ -357,6 +405,28 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
 
       {message ? <div className={styles.errorBox}>{message}</div> : null}
 
+      <div className={styles.departmentTabs} aria-label="Filter tasks by department" role="tablist">
+        {departmentTabs.map((tab) => {
+          const departmentId = getDepartmentIdForTab(tab, departments);
+          const isDisabled = departmentId === undefined;
+          const isActive = selectedDepartmentTab === tab.id;
+
+          return (
+            <button
+              aria-selected={isActive}
+              className={isActive ? styles.activeDepartmentTab : ""}
+              disabled={isDisabled}
+              key={tab.id}
+              onClick={() => setSelectedDepartmentTab(tab.id)}
+              role="tab"
+              type="button"
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       {isFormOpen ? (
         <div className={styles.modalLayer} role="dialog" aria-modal="true" aria-labelledby="new-task-title">
           <form
@@ -417,6 +487,22 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
                   {members.map((member) => (
                     <option key={member.id} value={member.id}>
                       {getMemberLabel(member)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Department
+                <select
+                  value={draft.departmentId}
+                  onChange={(event) => setDraft({ ...draft, departmentId: event.target.value })}
+                  required
+                  disabled={isPending || departments.length === 0}
+                >
+                  <option value="">Choose a department</option>
+                  {departments.map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
                     </option>
                   ))}
                 </select>
@@ -517,7 +603,7 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
             <KanbanColumn
               key={column.id}
               column={column}
-              tasks={tasks.filter((task) => task.status === column.id)}
+              tasks={filteredTasks.filter((task) => task.status === column.id)}
               openTaskForm={openTaskForm}
             />
           ))}

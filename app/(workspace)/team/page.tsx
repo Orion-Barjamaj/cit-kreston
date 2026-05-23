@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { getSupabaseServerClient } from "@/app/lib/supabase";
-import { addTeamMember } from "./actions";
+import AddMemberForm from "./add-member-form";
 import RoleGroup from "./role-group";
 import styles from "./team.module.css";
 
@@ -46,11 +46,21 @@ const roleGroups = [
   { key: "juniors", label: "Juniors", roles: new Set(["junior", "associate"]) },
 ];
 
+function normalizeDepartmentName(name: string) {
+  return name.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function isVisibleDepartment(department: DepartmentRecord) {
+  const normalizedName = normalizeDepartmentName(department.name);
+
+  return normalizedName !== "hr" && normalizedName !== "human resources";
+}
+
 function getUniqueDepartments(departments: DepartmentRecord[]) {
   const departmentsByName = new Map<string, DepartmentRecord>();
 
-  departments.forEach((department) => {
-    const key = department.name.trim().toLowerCase();
+  departments.filter(isVisibleDepartment).forEach((department) => {
+    const key = normalizeDepartmentName(department.name);
 
     if (!departmentsByName.has(key)) {
       departmentsByName.set(key, department);
@@ -164,41 +174,9 @@ export default async function TeamPage() {
 
       {error ? <div className={styles.errorBox}>{error}</div> : null}
 
-      <form action={addTeamMember} className={styles.addMemberForm}>
-        <label>
-          Name
-          <input name="name" placeholder="Sara Berisha" required disabled={!isConfigured} />
-        </label>
-        <label>
-          Email
-          <input name="email" placeholder="sara@company.com" required type="email" disabled={!isConfigured} />
-        </label>
-        <label>
-          Role
-          <select name="role" defaultValue="Manager" disabled={!isConfigured}>
-            {roles.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Department
-          <select name="department_id" required disabled={!isConfigured || uniqueDepartments.length === 0}>
-            {uniqueDepartments.map((department) => (
-              <option key={department.id} value={department.id}>
-                {department.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className={styles.primaryButton} type="submit" disabled={!isConfigured || uniqueDepartments.length === 0}>
-          Add Member
-        </button>
-      </form>
+      <AddMemberForm departments={uniqueDepartments} isConfigured={isConfigured} roles={roles} />
 
-      <div className={styles.teamLayout}>
+      <div className={styles.teamLayoutSingle}>
         <article className={styles.panel}>
           <h3>Team by role</h3>
           <div className={styles.departmentGroups}>
@@ -211,17 +189,6 @@ export default async function TeamPage() {
             ) : null}
           </div>
         </article>
-
-        <aside className={styles.panel}>
-          <h3>Departments</h3>
-          <ul className={styles.hierarchyList}>
-            {uniqueDepartments.map((department) => (
-              <li key={department.id}>
-                <strong>{department.name}</strong>
-              </li>
-            ))}
-          </ul>
-        </aside>
       </div>
     </section>
   );

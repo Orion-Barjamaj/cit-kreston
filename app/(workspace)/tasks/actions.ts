@@ -12,6 +12,7 @@ export type CreateTaskInput = {
   deadline: string;
   clientId: string;
   assignedTo: string;
+  departmentId: string;
 };
 
 export type TaskActionState = {
@@ -81,6 +82,7 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
   const deadline = cleanText(input.deadline);
   const clientId = getOptionalPositiveInt(input.clientId);
   const assignedTo = getOptionalPositiveInt(input.assignedTo);
+  const departmentId = getOptionalPositiveInt(input.departmentId);
 
   if (!title) {
     return {
@@ -96,10 +98,10 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
     };
   }
 
-  if (clientId === undefined || assignedTo === undefined) {
+  if (clientId === undefined || assignedTo === undefined || departmentId === undefined) {
     return {
       status: "error",
-      message: "Client and assigned user must be valid.",
+      message: "Client, assigned user, and department must be valid.",
     };
   }
 
@@ -110,10 +112,24 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
     };
   }
 
+  if (!departmentId) {
+    return {
+      status: "error",
+      message: "Choose a department.",
+    };
+  }
+
   if (clientId !== null && !(await recordExists("clients", clientId))) {
     return {
       status: "error",
       message: `Client ID ${clientId} does not exist. Leave Client ID blank or choose an existing client.`,
+    };
+  }
+
+  if (!(await recordExists("departments", departmentId))) {
+    return {
+      status: "error",
+      message: "Selected department does not exist.",
     };
   }
 
@@ -140,7 +156,7 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
       deadline: deadline ? `${deadline}T00:00:00` : null,
       client_id: clientId,
       assigned_to: assignedTo,
-      department_id: assignedUser.department_id,
+      department_id: departmentId,
       created_by: null,
     })
     .select("id, title, description, status, priority, deadline, client_id, assigned_to, department_id, created_by, created_at")

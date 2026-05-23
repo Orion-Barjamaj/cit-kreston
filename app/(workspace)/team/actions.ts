@@ -3,11 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/app/lib/supabase";
 
-export async function addTeamMember(formData: FormData) {
+export type AddTeamMemberState = {
+  message: string;
+  status: "idle" | "error" | "success";
+};
+
+export async function addTeamMember(
+  _previousState: AddTeamMemberState,
+  formData: FormData,
+): Promise<AddTeamMemberState> {
   const supabase = getSupabaseServerClient();
 
   if (!supabase) {
-    return;
+    return {
+      status: "error",
+      message: "Supabase is not configured.",
+    };
   }
 
   const name = String(formData.get("name") ?? "").trim();
@@ -17,10 +28,26 @@ export async function addTeamMember(formData: FormData) {
   const departmentId = Number(departmentIdValue);
 
   if (!name || !email || !role || !Number.isInteger(departmentId) || departmentId <= 0) {
-    return;
+    return {
+      status: "error",
+      message: "Name, email, role, and department are required.",
+    };
   }
 
-  await supabase.from("users").insert({
+  const { data: department, error: departmentError } = await supabase
+    .from("departments")
+    .select("id")
+    .eq("id", departmentId)
+    .maybeSingle();
+
+  if (departmentError || !department) {
+    return {
+      status: "error",
+      message: "Choose a valid department.",
+    };
+  }
+
+  const { error } = await supabase.from("users").insert({
     name,
     email,
     role,
@@ -33,5 +60,19 @@ export async function addTeamMember(formData: FormData) {
       .toUpperCase(),
   });
 
+  if (error) {
+    return {
+      status: "error",
+      message: error.message,
+    };
+  }
+
   revalidatePath("/team");
+  revalidatePath("/tasks");
+  revalidatePath("/clients");
+
+  return {
+    status: "success",
+    message: `${name} was added to the team.`,
+  };
 }

@@ -37,6 +37,18 @@
   background: #ffffff;
 }
 
+.formError,
+.formSuccess {
+  grid-column: 1 / -1;
+  color: #176d2e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.formError {
+  color: #991b1b;
+}
+
 .addMemberForm label {
   display: grid;
   gap: 6px;
@@ -61,6 +73,11 @@
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   gap: 16px;
+}
+
+.teamLayoutSingle {
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 .departmentGroups,

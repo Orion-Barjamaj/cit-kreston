@@ -139,6 +139,47 @@
   color: #991b1b;
 }
 
+.departmentTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 28px;
+  background: #ffffff;
+}
+
+.departmentTabs button {
+  min-height: 34px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 0 13px;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.departmentTabs button:hover:not(:disabled) {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.departmentTabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.departmentTabs .activeDepartmentTab {
+  border-color: #2f66e8;
+  background: #2f66e8;
+  color: #ffffff;
+}
+
 .kanban {
   box-sizing: border-box;
   display: grid;
@@ -545,6 +586,10 @@
 
   .kanban {
     padding: 0 14px 20px;
+  }
+
+  .departmentTabs {
+    padding: 12px 14px;
   }
 
 }

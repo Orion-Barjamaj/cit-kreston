@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { AddDocumentForm, AddTimelineNoteForm } from "../add-document-note-forms";
-import AddTaskForm, { type TaskAssignee } from "../add-task-form";
+import AddTaskForm, { type TaskAssignee, type TaskDepartment } from "../add-task-form";
 import DocumentSummaryPopover from "../document-summary-popover";
 import styles from "../clients.module.css";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
@@ -51,6 +51,11 @@ type ClientUserRecord = {
   email: string | null;
   role: string;
   department_id: number | null;
+};
+
+type ClientDepartmentRecord = {
+  id: number;
+  name: string;
 };
 
 type ClientTimelineNoteRecord = {
@@ -205,6 +210,38 @@ async function getClientUsers() {
     .order("name");
 
   return (data ?? []) as ClientUserRecord[];
+}
+
+async function getClientDepartments() {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return [] as ClientDepartmentRecord[];
+  }
+
+  const { data } = await supabase.from("departments").select("id, name").order("name");
+
+  return (data ?? []) as ClientDepartmentRecord[];
+}
+
+function normalizeDepartmentName(name: string) {
+  return name.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function getVisibleDepartments(departments: ClientDepartmentRecord[]) {
+  const departmentsByName = new Map<string, ClientDepartmentRecord>();
+
+  departments.forEach((department) => {
+    const key = normalizeDepartmentName(department.name);
+
+    if (key === "hr" || key === "human resources" || departmentsByName.has(key)) {
+      return;
+    }
+
+    departmentsByName.set(key, department);
+  });
+
+  return Array.from(departmentsByName.values());
 }
 
 function managerName(client: ClientRecord, usersById: Map<number, ClientUserRecord>) {
@@ -405,11 +442,16 @@ export default async function ClientPage({ params }: ClientPageProps) {
   const savedTimelineNotes = await getClientTimelineNotes(client.id);
   const savedDocuments = await getClientDocuments(client.id);
   const teamMembers = await getClientUsers();
+  const savedDepartments = await getClientDepartments();
   const usersById = new Map(teamMembers.map((user) => [user.id, user]));
   const taskAssignees: TaskAssignee[] = teamMembers.map((user) => ({
     id: user.id,
     name: user.name,
     role: user.role,
+  }));
+  const taskDepartments: TaskDepartment[] = getVisibleDepartments(savedDepartments).map((department) => ({
+    id: department.id,
+    name: department.name,
   }));
   const tasks = savedTasks.map((task) => mapTask(task, usersById));
   const activities = savedActivities;
@@ -494,7 +536,7 @@ export default async function ClientPage({ params }: ClientPageProps) {
             <h3>Tasks for this client</h3>
           </div>
         </div>
-        <AddTaskForm assignees={taskAssignees} clientId={client.id} />
+        <AddTaskForm assignees={taskAssignees} clientId={client.id} departments={taskDepartments} />
         <div className={styles.tableWrap}>
           <table className={styles.dataTable}>
             <thead>

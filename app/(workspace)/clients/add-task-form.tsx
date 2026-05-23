@@ -10,6 +10,11 @@ export type TaskAssignee = {
   role: string;
 };
 
+export type TaskDepartment = {
+  id: number;
+  name: string;
+};
+
 const initialState: CreateTaskState = {
   message: "",
   status: "idle",
@@ -22,9 +27,11 @@ function formatRole(role: string) {
 export default function AddTaskForm({
   assignees,
   clientId,
+  departments,
 }: {
   assignees: TaskAssignee[];
   clientId: number;
+  departments: TaskDepartment[];
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(createClientTask, initialState);
@@ -55,6 +62,17 @@ export default function AddTaskForm({
             {assignees.map((assignee) => (
               <option key={assignee.id} value={assignee.id}>
                 {assignee.name} - {formatRole(assignee.role)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Department
+          <select name="department_id" required disabled={isPending || departments.length === 0}>
+            <option value="">Choose a department</option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
               </option>
             ))}
           </select>

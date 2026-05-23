@@ -151,6 +151,7 @@ export async function createClientTask(
   const priority = getTextValue(formData, "priority") || "medium";
   const deadline = getTextValue(formData, "deadline");
   const assignedTo = getOptionalPositiveInt(formData, "assigned_to");
+  const departmentId = getOptionalPositiveInt(formData, "department_id");
 
   if (!clientId) {
     return {
@@ -180,6 +181,13 @@ export async function createClientTask(
     };
   }
 
+  if (!departmentId) {
+    return {
+      status: "error",
+      message: "Choose a department.",
+    };
+  }
+
   const { data: assignedUser, error: assignedUserError } = await supabase
     .from("users")
     .select("id, department_id")
@@ -193,6 +201,19 @@ export async function createClientTask(
     };
   }
 
+  const { data: department, error: departmentError } = await supabase
+    .from("departments")
+    .select("id")
+    .eq("id", departmentId)
+    .maybeSingle();
+
+  if (departmentError || !department) {
+    return {
+      status: "error",
+      message: "Selected department does not exist.",
+    };
+  }
+
   const { error } = await supabase.from("tasks").insert({
     title,
     description: description || null,
@@ -201,7 +222,7 @@ export async function createClientTask(
     deadline: deadline ? `${deadline}T00:00:00` : null,
     client_id: clientId,
     assigned_to: assignedTo,
-    department_id: assignedUser.department_id,
+    department_id: departmentId,
     created_by: null,
   });
 
