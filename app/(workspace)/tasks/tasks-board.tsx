@@ -121,15 +121,17 @@ function TaskCard({ task }: { task: BoardTask }) {
       {...listeners}
       {...attributes}
     >
-      <div className={styles.taskCardTop}>
-        <span className={styles.categoryTag}>{task.priority}</span>
-        <span className={styles.avatar}>{getInitials(task.assignee)}</span>
-      </div>
-      <h4>{task.title}</h4>
-      <p className={styles.taskDescription}>{task.description}</p>
-      <div className={styles.taskMeta}>
-        <span>{task.deadline}</span>
-        <span>{task.assignee}</span>
+      <div className={styles.taskCardSwing}>
+        <div className={styles.taskCardTop}>
+          <span className={styles.categoryTag}>{task.priority}</span>
+          <span className={styles.avatar}>{getInitials(task.assignee)}</span>
+        </div>
+        <h4>{task.title}</h4>
+        <p className={styles.taskDescription}>{task.description}</p>
+        <div className={styles.taskMeta}>
+          <span>{task.deadline}</span>
+          <span>{task.assignee}</span>
+        </div>
       </div>
     </article>
   );
