@@ -18,6 +18,7 @@ import type { TaskMemberOption } from "./page";
 import styles from "./tasks.module.css";
 
 type BoardTask = {
+  assignedTo: number | null;
   id: number;
   title: string;
   description: string;
@@ -34,6 +35,12 @@ type TaskDraft = {
   deadline: string;
   clientId: string;
   assignedTo: string;
+};
+
+type HandoffDraft = {
+  assignedTo: string;
+  nextStatus: TaskStatus;
+  taskId: number;
 };
 
 type TasksBoardProps = {
@@ -96,6 +103,24 @@ function getMemberLabel(member: TaskMemberOption) {
   return `${member.name} - ${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`;
 }
 
+function getStatusFromRole(role: string): TaskStatus {
+  const normalizedRole = role.toLowerCase();
+
+  if (normalizedRole === "senior") {
+    return "seniors";
+  }
+
+  if (normalizedRole === "manager" || normalizedRole === "partner") {
+    return "managers";
+  }
+
+  return "juniors";
+}
+
+function getMembersForStatus(members: TaskMemberOption[], status: TaskStatus) {
+  return members.filter((member) => getStatusFromRole(member.role) === status);
+}
+
 function getPriorityClassName(priority: string) {
   const normalizedPriority = priority.toLowerCase();
 
@@ -115,6 +140,7 @@ function mapTaskRecord(task: TaskRecord, membersById: Map<number, TaskMemberOpti
   const assignee = assignedMember ? assignedMember.name : "Unassigned";
 
   return {
+    assignedTo: task.assigned_to,
     id: task.id,
     title: task.title,
     description: task.description?.trim() || "No description",
@@ -200,6 +226,7 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
   const membersById = new Map(members.map((member) => [member.id, member]));
   const [tasks, setTasks] = useState<BoardTask[]>(() => initialTasks.map((task) => mapTaskRecord(task, membersById)));
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [message, setMessage] = useState(error ?? "");
   const [isPending, startTransition] = useTransition();
@@ -221,6 +248,10 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
   function closeTaskForm() {
     setIsFormOpen(false);
     setDraft(emptyDraft);
+  }
+
+  function closeHandoffForm() {
+    setHandoffDraft(null);
   }
 
   function addTask() {
@@ -251,18 +282,53 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
 
     const taskId = Number(active.id);
     const nextStatus = over.id as TaskStatus;
-    const previousTasks = tasks;
+    const task = tasks.find((currentTask) => currentTask.id === taskId);
 
     if (!Number.isInteger(taskId) || !validStatuses.has(nextStatus)) {
       return;
     }
 
-    setTasks((currentTasks) =>
-      currentTasks.map((task) => (task.id === taskId && task.status !== nextStatus ? { ...task, status: nextStatus } : task)),
-    );
+    if (!task || task.status === nextStatus) {
+      return;
+    }
 
+    setMessage("");
+    setHandoffDraft({
+      assignedTo: "",
+      nextStatus,
+      taskId,
+    });
+  }
+
+  function submitHandoff() {
+    if (!handoffDraft) {
+      return;
+    }
+
+    const assignedTo = Number(handoffDraft.assignedTo);
+    const assignedMember = membersById.get(assignedTo);
+    const previousTasks = tasks;
+
+    if (!assignedMember || getStatusFromRole(assignedMember.role) !== handoffDraft.nextStatus) {
+      setMessage("Choose a team member from the selected category.");
+      return;
+    }
+
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === handoffDraft.taskId
+          ? {
+              ...task,
+              assignedTo,
+              assignee: assignedMember.name,
+              status: handoffDraft.nextStatus,
+            }
+          : task,
+      ),
+    );
+    closeHandoffForm();
     startTransition(async () => {
-      const result = await updateTaskStatus(taskId, nextStatus);
+      const result = await updateTaskStatus(handoffDraft.taskId, handoffDraft.nextStatus, assignedTo);
 
       if (result.status === "error") {
         setTasks(previousTasks);
@@ -305,9 +371,6 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
                 <p className={styles.eyebrow}>Create task</p>
                 <h3 id="new-task-title">New board card</h3>
               </div>
-              <button className={styles.textButton} type="button" onClick={closeTaskForm} disabled={isPending}>
-                Close
-              </button>
             </div>
 
             <div className={styles.modalGrid}>
@@ -385,6 +448,62 @@ export default function TasksBoard({ error, initialTasks, isConfigured, members 
                 {isPending ? "Creating..." : "Create Task"}
               </button>
               <button type="button" onClick={closeTaskForm} disabled={isPending}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {handoffDraft ? (
+        <div className={styles.modalLayer} role="dialog" aria-modal="true" aria-labelledby="handoff-title">
+          <form
+            className={styles.handoffModal}
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitHandoff();
+            }}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>Task handoff</p>
+                <h3 id="handoff-title">
+                  Move to {statusColumns.find((column) => column.id === handoffDraft.nextStatus)?.title}
+                </h3>
+              </div>
+            </div>
+
+            <label>
+              Assigned team member
+              <select
+                value={handoffDraft.assignedTo}
+                onChange={(event) =>
+                  setHandoffDraft({
+                    ...handoffDraft,
+                    assignedTo: event.target.value,
+                  })
+                }
+                required
+                disabled={isPending}
+              >
+                <option value="">Choose a person</option>
+                {getMembersForStatus(members, handoffDraft.nextStatus).map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {getMemberLabel(member)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {getMembersForStatus(members, handoffDraft.nextStatus).length === 0 ? (
+              <p className={styles.formHint}>No team members are available in this category.</p>
+            ) : null}
+
+            <div className={styles.cardActions}>
+              <button type="submit" disabled={isPending || getMembersForStatus(members, handoffDraft.nextStatus).length === 0}>
+                {isPending ? "Moving..." : "Move task"}
+              </button>
+              <button type="button" onClick={closeHandoffForm} disabled={isPending}>
                 Cancel
               </button>
             </div>

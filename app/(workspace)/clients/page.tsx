@@ -27,26 +27,35 @@ function getLatestDate(values: Array<string | null | undefined>) {
 }
 
 function getRiskScore(client: ClientRecord, lastUpdatedAt: string | null) {
+  const extractedRisk = client.risk?.toLowerCase();
   const status = client.status?.toLowerCase();
-  let score = 9;
+  let score = 2;
 
-  if (status === "delayed") {
-    score = 2;
-  }
-
-  if (status === "onboarding") {
+  if (extractedRisk === "medium") {
     score = 5;
   }
 
+  if (extractedRisk === "high") {
+    score = 9;
+  }
+
+  if (status === "delayed") {
+    score = Math.max(score, 9);
+  }
+
+  if (status === "onboarding") {
+    score = Math.max(score, 5);
+  }
+
   if (status === "completed") {
-    score = 10;
+    score = 1;
   }
 
   if (lastUpdatedAt) {
     const daysSinceUpdate = (Date.now() - new Date(lastUpdatedAt).getTime()) / (1000 * 60 * 60 * 24);
 
     if (daysSinceUpdate > 7) {
-      score = Math.min(score, 4);
+      score = Math.max(score, 7);
     }
   }
 
@@ -68,7 +77,7 @@ async function getClients() {
 
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, industry, status, assigned_manager_id, created_at")
+    .select("id, name, industry, risk, status, assigned_manager_id, created_at")
     .order("created_at", { ascending: false });
 
   const clients = (data ?? []) as ClientRecord[];
@@ -135,12 +144,17 @@ export default async function ClientsPage() {
         </div>
       </div>
 
-      <div className={styles.clientCreateGrid}>
-        <AddClientForm isConfigured={isConfigured} managers={managers} />
-        <ImportClientContractForm isConfigured={isConfigured} />
-      </div>
-
-      <ClientsView clients={clients} error={error} isConfigured={isConfigured} />
+      <ClientsView
+        actions={
+          <>
+            <AddClientForm isConfigured={isConfigured} managers={managers} />
+            <ImportClientContractForm isConfigured={isConfigured} />
+          </>
+        }
+        clients={clients}
+        error={error}
+        isConfigured={isConfigured}
+      />
     </section>
   );
 }

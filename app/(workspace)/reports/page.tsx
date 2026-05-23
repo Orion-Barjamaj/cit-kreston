@@ -5,6 +5,7 @@ import ScheduleWidget, { type ScheduleWeek } from "./schedule-widget";
 
 type ReportsData = {
   clients: ClientRecord[];
+  documents: ClientDocumentRecord[];
   error?: string;
   isConfigured: boolean;
   tasks: TaskRecord[];
@@ -15,15 +16,15 @@ type ReportCard = {
   value: string;
 };
 
-type DepartmentProgress = {
-  label: string;
-  value: string;
-};
-
 type ReportNote = {
   body: string;
   done: boolean;
   title: string;
+};
+
+type ClientDocumentRecord = {
+  client_id: number | null;
+  id: number;
 };
 
 const dayInMs = 24 * 60 * 60 * 1000;
@@ -44,21 +45,24 @@ async function getReportsData(): Promise<ReportsData> {
   if (!supabase) {
     return {
       clients: [],
+      documents: [],
       isConfigured: false,
       tasks: [],
     };
   }
 
-  const [clientsResult, tasksResult] = await Promise.all([
-    supabase.from("clients").select("id, name, industry, status, assigned_manager_id, created_at"),
+  const [clientsResult, tasksResult, documentsResult] = await Promise.all([
+    supabase.from("clients").select("id, name, industry, risk, status, assigned_manager_id, created_at"),
     supabase
       .from("tasks")
       .select("id, title, description, status, priority, deadline, client_id, assigned_to, department_id, created_by, created_at"),
+    supabase.from("documents").select("id, client_id"),
   ]);
 
   return {
     clients: clientsResult.data ?? [],
-    error: clientsResult.error?.message ?? tasksResult.error?.message,
+    documents: documentsResult.data ?? [],
+    error: clientsResult.error?.message ?? tasksResult.error?.message ?? documentsResult.error?.message,
     isConfigured: true,
     tasks: tasksResult.data ?? [],
   };
@@ -94,95 +98,90 @@ function getWeekStart(date: Date) {
   return weekStart;
 }
 
-function getReportCards(clients: ClientRecord[], tasks: TaskRecord[]): ReportCard[] {
+function getOverdueTasks(tasks: TaskRecord[]) {
   const today = new Date();
-  const weekStart = getWeekStart(today);
-  const activeClients = clients.filter(isActiveClient).length;
-  const finishedThisWeek = tasks.filter((task) => {
-    const createdAt = normalizeDate(task.created_at);
+  today.setHours(0, 0, 0, 0);
 
-    return createdAt !== null && createdAt >= weekStart && createdAt <= today && isDone(task);
-  }).length;
-  const tasksWithDeadline = tasks.filter((task) => normalizeDate(task.deadline));
-  const overdueTasks = tasksWithDeadline.filter((task) => {
+  return tasks.filter((task) => {
     const deadline = normalizeDate(task.deadline);
 
     return deadline !== null && deadline < today && !isDone(task);
-  }).length;
-  const overdueRate = tasksWithDeadline.length > 0 ? Math.round((overdueTasks / tasksWithDeadline.length) * 100) : 0;
-  const taskAges = tasks
-    .map((task) => normalizeDate(task.created_at))
-    .filter((date): date is Date => date !== null)
-    .map((date) => Math.max(0, Math.round((today.getTime() - date.getTime()) / dayInMs)));
-  const averageTaskAge =
-    taskAges.length > 0 ? `${(taskAges.reduce((total, age) => total + age, 0) / taskAges.length).toFixed(1)} days` : "0 days";
+  });
+}
 
+function getBlockedReviews(tasks: TaskRecord[]) {
+  const today = new Date();
+
+  return tasks.filter((task) => {
+    const status = (task.status ?? "").toLowerCase();
+    const createdAt = normalizeDate(task.created_at);
+
+    return status === "review" && createdAt !== null && today.getTime() - createdAt.getTime() > 3 * dayInMs;
+  });
+}
+
+function getClientsMissingDocuments(clients: ClientRecord[], documents: ClientDocumentRecord[]) {
+  const clientIdsWithDocuments = new Set(
+    documents
+      .map((document) => document.client_id)
+      .filter((clientId): clientId is number => clientId !== null),
+  );
+
+  return clients.filter((client) => isActiveClient(client) && !clientIdsWithDocuments.has(client.id));
+}
+
+function getHighRiskClients(clients: ClientRecord[]) {
+  return clients.filter((client) => {
+    const risk = client.risk?.toLowerCase();
+    const status = client.status?.toLowerCase();
+
+    return risk === "high" || status === "delayed";
+  });
+}
+
+function getReportCards(
+  clients: ClientRecord[],
+  documents: ClientDocumentRecord[],
+  tasks: TaskRecord[],
+): ReportCard[] {
   return [
-    { label: "Total active clients", value: String(activeClients) },
-    { label: "Average task age", value: averageTaskAge },
-    { label: "Tasks finished this week", value: String(finishedThisWeek) },
-    { label: "Overdue rate", value: `${overdueRate}%` },
+    { label: "Overdue items", value: String(getOverdueTasks(tasks).length) },
+    { label: "Blocked reviews", value: String(getBlockedReviews(tasks).length) },
+    { label: "Missing documents", value: String(getClientsMissingDocuments(clients, documents).length) },
+    { label: "High-risk clients", value: String(getHighRiskClients(clients).length) },
   ];
 }
 
-function getDepartmentProgress(tasks: TaskRecord[]): DepartmentProgress[] {
-  const groupedTasks = new Map<number | null, TaskRecord[]>();
+function getReportNotes(
+  clients: ClientRecord[],
+  documents: ClientDocumentRecord[],
+  tasks: TaskRecord[],
+): ReportNote[] {
+  const overdueNotes = getOverdueTasks(tasks).slice(0, 3).map((task) => ({
+    body: task.deadline ? `Deadline: ${new Date(task.deadline).toLocaleDateString("en")}` : "Deadline has passed.",
+    done: false,
+    title: `Overdue: ${task.title}`,
+  }));
 
-  tasks.forEach((task) => {
-    const departmentId = task.department_id;
-    groupedTasks.set(departmentId, [...(groupedTasks.get(departmentId) ?? []), task]);
-  });
+  const blockedReviewNotes = getBlockedReviews(tasks).slice(0, 3).map((task) => ({
+    body: task.description?.trim() || "Review has been open for more than 3 days.",
+    done: false,
+    title: `Blocked review: ${task.title}`,
+  }));
 
-  return Array.from(groupedTasks.entries())
-    .sort(([firstId], [secondId]) => (firstId ?? Number.MAX_SAFE_INTEGER) - (secondId ?? Number.MAX_SAFE_INTEGER))
-    .slice(0, 4)
-    .map(([departmentId, departmentTasks]) => {
-      const completeCount = departmentTasks.filter(isDone).length;
-      const percent = departmentTasks.length > 0 ? Math.round((completeCount / departmentTasks.length) * 100) : 0;
+  const missingDocumentNotes = getClientsMissingDocuments(clients, documents).slice(0, 3).map((client) => ({
+    body: client.industry ? `${client.industry} client has no saved documents.` : "Client has no saved documents.",
+    done: false,
+    title: `Missing documents: ${client.name}`,
+  }));
 
-      return {
-        label: departmentId ? `Department ${departmentId}` : "Unassigned",
-        value: `${percent}%`,
-      };
-    });
-}
+  const highRiskNotes = getHighRiskClients(clients).slice(0, 3).map((client) => ({
+    body: client.risk ? `Risk: ${client.risk}` : `Status: ${client.status ?? "delayed"}`,
+    done: false,
+    title: `High-risk client: ${client.name}`,
+  }));
 
-function getReportNotes(tasks: TaskRecord[]): ReportNote[] {
-  return tasks
-    .filter((task) => task.description || task.title)
-    .sort((first, second) => {
-      const firstDate = normalizeDate(first.created_at)?.getTime() ?? 0;
-      const secondDate = normalizeDate(second.created_at)?.getTime() ?? 0;
-
-      return secondDate - firstDate;
-    })
-    .slice(0, 3)
-    .map((task) => ({
-      body: task.description?.trim() || `Status: ${task.status ?? "not set"}`,
-      done: isDone(task),
-      title: task.title,
-    }));
-}
-
-function getAiInsight(tasks: TaskRecord[]) {
-  const today = new Date();
-  const overdueTasks = tasks.filter((task) => {
-    const deadline = normalizeDate(task.deadline);
-
-    return deadline !== null && deadline < today && !isDone(task);
-  });
-
-  if (overdueTasks.length > 0) {
-    return `${overdueTasks.length} overdue task${overdueTasks.length === 1 ? "" : "s"} need attention.`;
-  }
-
-  const reviewTasks = tasks.filter((task) => (task.status ?? "").toLowerCase() === "review");
-
-  if (reviewTasks.length > 0) {
-    return "Review is the main active bottleneck.";
-  }
-
-  return "No urgent report risks detected.";
+  return [...overdueNotes, ...blockedReviewNotes, ...missingDocumentNotes, ...highRiskNotes].slice(0, 8);
 }
 
 function getScheduleWeeks(tasks: TaskRecord[]): ScheduleWeek[] {
@@ -218,10 +217,9 @@ function getScheduleWeeks(tasks: TaskRecord[]): ScheduleWeek[] {
 }
 
 export default async function ReportsPage() {
-  const { clients, error, isConfigured, tasks } = await getReportsData();
-  const reportCards = getReportCards(clients, tasks);
-  const departmentProgress = getDepartmentProgress(tasks);
-  const notes = getReportNotes(tasks);
+  const { clients, documents, error, isConfigured, tasks } = await getReportsData();
+  const reportCards = getReportCards(clients, documents, tasks);
+  const notes = getReportNotes(clients, documents, tasks);
   const scheduleWeeks = getScheduleWeeks(tasks);
 
   return (
@@ -230,7 +228,7 @@ export default async function ReportsPage() {
         <div>
           <p className={styles.eyebrow}>Management KPIs</p>
           <h2>Reports</h2>
-          <p>Simple workload, progress, activity, and AI insight summaries.</p>
+          <p>Overdue items, blocked reviews, missing documents, and client risk.</p>
         </div>
       </div>
 
@@ -252,26 +250,11 @@ export default async function ReportsPage() {
         ))}
       </div>
 
-      <article className={styles.panel}>
-        <h3>Department Progress</h3>
-        <div className={styles.progressList}>
-          {departmentProgress.length > 0 ? (
-            departmentProgress.map((item) => (
-              <span key={item.label}>
-                {item.label} {item.value}
-              </span>
-            ))
-          ) : (
-            <span>No department task data</span>
-          )}
-        </div>
-      </article>
-
       <div className={styles.twoColumn}>
         <ScheduleWidget weeks={scheduleWeeks} />
 
         <article className={styles.panel}>
-          <h3>Notes</h3>
+          <h3>Risk items</h3>
           <ul className={styles.noteChecklist}>
             {notes.length > 0 ? (
               notes.map((note) => (
@@ -288,7 +271,7 @@ export default async function ReportsPage() {
                 <span aria-hidden="true" />
                 <div>
                   <strong>No task notes found</strong>
-                  <p>Add task descriptions to populate this list.</p>
+                  <p>No overdue items, blocked reviews, missing documents, or high-risk clients found.</p>
                 </div>
               </li>
             )}

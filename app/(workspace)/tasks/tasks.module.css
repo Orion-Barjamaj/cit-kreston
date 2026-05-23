@@ -19,12 +19,19 @@
   composes: cardActions from "../workspace.module.css";
 }
 
-.cardActions button[type="submit"] {
+.taskModal .cardActions button[type="submit"],
+.handoffModal .cardActions button[type="submit"] {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 18px;
   background: #2f66e8;
   color: #ffffff;
+  font-weight: 800;
 }
 
-.cardActions button[type="submit"]:hover:not(:disabled) {
+.taskModal .cardActions button[type="submit"]:hover:not(:disabled),
+.handoffModal .cardActions button[type="submit"]:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
@@ -419,7 +426,8 @@
   background: rgba(17, 24, 39, 0.32);
 }
 
-.taskModal {
+.taskModal,
+.handoffModal {
   width: min(720px, calc(100vw - 48px));
   max-height: calc(100vh - 48px);
   overflow: auto;
@@ -430,6 +438,10 @@
   padding: 18px;
   background: #ffffff;
   box-shadow: 0 24px 70px rgba(17, 24, 39, 0.22);
+}
+
+.handoffModal {
+  width: min(420px, calc(100vw - 48px));
 }
 
 .modalHeader {
@@ -450,7 +462,8 @@
   gap: 12px;
 }
 
-.taskModal label {
+.taskModal label,
+.handoffModal label {
   display: grid;
   gap: 6px;
   color: #6b7280;
@@ -460,7 +473,8 @@
 
 .taskModal input,
 .taskModal select,
-.taskModal textarea {
+.taskModal textarea,
+.handoffModal select {
   width: 100%;
   border: 1px solid #d9dee7;
   border-radius: 8px;
@@ -471,7 +485,8 @@
 }
 
 .taskModal input,
-.taskModal select {
+.taskModal select,
+.handoffModal select {
   min-height: 38px;
   padding: 0 10px;
 }
@@ -484,6 +499,15 @@
 
 .fullField {
   grid-column: 1 / -1;
+}
+
+.formHint {
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 @media (max-width: 980px) {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import styles from "./clients.module.css";
 import type { ClientRecord } from "@/app/lib/supabase";
@@ -12,6 +13,7 @@ type ClientListRecord = ClientRecord & {
 };
 
 type ClientsViewProps = {
+  actions?: ReactNode;
   clients: ClientListRecord[];
   error?: string;
   isConfigured: boolean;
@@ -85,12 +87,12 @@ function getStatusClassName(status: string) {
   return styles.statusTag;
 }
 
-function getRiskClassName(riskScore = 9) {
-  if (riskScore <= 3) {
+function getRiskClassName(riskScore = 2) {
+  if (riskScore >= 7) {
     return `${styles.riskTag} ${styles.riskRed}`;
   }
 
-  if (riskScore <= 6) {
+  if (riskScore >= 4) {
     return `${styles.riskTag} ${styles.riskOrange}`;
   }
 
@@ -122,7 +124,7 @@ function getSortValue(client: ClientListRecord, key: SortKey) {
     return new Date(client.last_updated_at ?? client.created_at ?? 0).getTime();
   }
 
-  return client.risk_score ?? 9;
+  return client.risk_score ?? 2;
 }
 
 function compareClients(first: ClientListRecord, second: ClientListRecord, key: SortKey) {
@@ -137,6 +139,7 @@ function compareClients(first: ClientListRecord, second: ClientListRecord, key: 
 }
 
 export default function ClientsView({
+  actions,
   clients,
   error,
   isConfigured,
@@ -188,14 +191,17 @@ export default function ClientsView({
 
       {error ? <div className={styles.errorBox}>{error}</div> : null}
 
-      <input
-        aria-label="Search clients"
-        className={styles.fullSearch}
-        onChange={(event) => setSearchTerm(event.target.value)}
-        placeholder="Search clients"
-        type="search"
-        value={searchTerm}
-      />
+      <div className={styles.clientControls}>
+        <input
+          aria-label="Search clients"
+          className={styles.fullSearch}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Search clients"
+          type="search"
+          value={searchTerm}
+        />
+        {actions}
+      </div>
 
       <div className={styles.tableWrap}>
         <table className={styles.dataTable}>
@@ -266,7 +272,7 @@ export default function ClientsView({
                     </td>
                     <td>
                       <span className={getRiskClassName(client.risk_score)}>
-                        {client.risk_score ?? 9}/10
+                        {client.risk_score ?? 2}/10
                       </span>
                     </td>
                   </tr>

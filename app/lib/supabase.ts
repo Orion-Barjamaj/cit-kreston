@@ -4,6 +4,7 @@ export type ClientRecord = {
   id: number;
   name: string;
   industry: string | null;
+  risk?: string | null;
   status: string | null;
   assigned_manager_id: number | null;
   created_at: string | null;

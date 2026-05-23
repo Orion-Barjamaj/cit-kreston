@@ -127,32 +127,46 @@
 
 .addClientForm {
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
   gap: 12px;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
-  padding: 14px;
+  padding: 10px;
   background: #ffffff;
+  min-height: 84px;
 }
 
-.clientCreateGrid {
+.clientControls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.32fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
+  grid-template-rows: auto 40px;
   gap: 12px;
   align-items: stretch;
 }
 
-.clientCreateGrid .addClientForm {
+.clientControls .fullSearch {
+  grid-column: 1;
+  grid-row: 2;
+  height: 40px;
+  margin: 0;
+}
+
+.clientControls .addClientForm {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
 }
 
 .importClientForm {
   display: grid;
   gap: 10px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-content: center;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
-  padding: 14px;
+  padding: 10px;
   background: #ffffff;
 }
 
@@ -169,7 +183,7 @@
 .addClientForm > div:first-child {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -183,7 +197,7 @@
 
 .addClientForm input,
 .addClientForm select {
-  min-height: 36px;
+  min-height: 34px;
   width: 100%;
   border: 1px solid #dedede;
   border-radius: 8px;
@@ -257,7 +271,8 @@
 
 .addClientActions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  align-self: end;
   gap: 12px;
   min-height: 36px;
 }
@@ -842,8 +857,24 @@
     flex-direction: column;
   }
 
-  .clientCreateGrid {
+  .clientControls {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .clientControls .fullSearch {
+    grid-column: auto;
+    grid-row: 2;
+  }
+
+  .clientControls .addClientForm {
+    grid-column: auto;
+    grid-row: 1;
+  }
+
+  .importClientForm {
+    grid-column: auto;
+    grid-row: 3;
   }
 
   .addClientForm > div:first-child {
@@ -880,6 +911,13 @@
   .addClientForm {
     align-items: stretch;
     grid-template-columns: 1fr;
+  }
+
+  .clientControls .fullSearch,
+  .addClientForm,
+  .importClientForm {
+    height: auto;
+    min-height: 0;
   }
 
   .addClientForm > div:first-child,

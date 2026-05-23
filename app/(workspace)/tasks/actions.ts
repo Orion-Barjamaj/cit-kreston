@@ -162,7 +162,11 @@ export async function createTask(input: CreateTaskInput): Promise<TaskActionStat
   };
 }
 
-export async function updateTaskStatus(taskId: number, status: TaskStatus): Promise<TaskActionState> {
+export async function updateTaskStatus(
+  taskId: number,
+  status: TaskStatus,
+  assignedTo: number,
+): Promise<TaskActionState> {
   const supabase = getSupabaseServerClient();
 
   if (!supabase) {
@@ -186,7 +190,41 @@ export async function updateTaskStatus(taskId: number, status: TaskStatus): Prom
     };
   }
 
-  const { error } = await supabase.from("tasks").update({ status }).eq("id", taskId);
+  if (!Number.isInteger(assignedTo) || assignedTo <= 0) {
+    return {
+      status: "error",
+      message: "Choose a team member for this handoff.",
+    };
+  }
+
+  const { data: assignedUser, error: assignedUserError } = await supabase
+    .from("users")
+    .select("id, role, department_id")
+    .eq("id", assignedTo)
+    .single();
+
+  if (assignedUserError || !assignedUser) {
+    return {
+      status: "error",
+      message: "Selected team member does not exist.",
+    };
+  }
+
+  if (getStatusFromRole(assignedUser.role) !== status) {
+    return {
+      status: "error",
+      message: "Choose a team member from the selected category.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("tasks")
+    .update({
+      assigned_to: assignedTo,
+      department_id: assignedUser.department_id,
+      status,
+    })
+    .eq("id", taskId);
 
   if (error) {
     return {
