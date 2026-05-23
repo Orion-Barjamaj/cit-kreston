@@ -52,6 +52,8 @@ type ClientDocumentRecord = {
   file_url: string | null;
   type: string | null;
   created_at: string | null;
+  summary: string | null;
+  last_updated: string | null;
 };
 
 type DisplayTask = {
@@ -138,6 +140,8 @@ const fallbackDocuments: ClientDocumentRecord[] = [
     file_url: null,
     type: "contract",
     created_at: "2026-05-20T00:00:00",
+    last_updated: "2026-05-20T00:00:00",
+    summary: "no sum",
   },
   {
     id: 2,
@@ -147,6 +151,8 @@ const fallbackDocuments: ClientDocumentRecord[] = [
     file_url: null,
     type: "report",
     created_at: "2026-05-21T00:00:00",
+    last_updated: "2026-05-20T00:00:00",
+    summary: "no sum",
   },
   {
     id: 3,
@@ -156,6 +162,8 @@ const fallbackDocuments: ClientDocumentRecord[] = [
     file_url: null,
     type: "payroll",
     created_at: "2026-05-22T00:00:00",
+    last_updated: "2026-05-20T00:00:00",
+    summary: "no sum",
   },
 ];
 
@@ -202,7 +210,9 @@ async function getClientTasks(clientId: number) {
 
   const { data } = await supabase
     .from("tasks")
-    .select("id, title, description, status, priority, deadline, assigned_to, department_id, created_at")
+    .select(
+      "id, title, description, status, priority, deadline, assigned_to, department_id, created_at",
+    )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false });
 
@@ -234,7 +244,9 @@ async function getClientDocuments(clientId: number) {
 
   const { data } = await supabase
     .from("documents")
-    .select("id, client_id, uploaded_by, file_name, file_url, type, created_at")
+    .select(
+      "id, client_id, uploaded_by, file_name, file_url, type, created_at, summary, last_updated",
+    )
     .eq("client_id", clientId)
     .order("created_at", { ascending: false });
 
@@ -305,33 +317,16 @@ function mapTask(task: ClientTaskRecord): DisplayTask {
     status: task.status ?? "todo",
     deadline: normalizeTaskDate(task.deadline),
     deadlineLabel: formatTaskDate(task.deadline),
-    reviewStartedAt: task.status === "review" ? normalizeTaskDate(task.created_at) : null,
+    reviewStartedAt:
+      task.status === "review" ? normalizeTaskDate(task.created_at) : null,
   };
 }
 
-function getDocumentSummary(document: ClientDocumentRecord) {
-  const type = document.type ?? "document";
-
-  if (type === "contract") {
-    return "AI Summary: Contract document. Check renewal dates, signature completeness, and client obligations.";
-  }
-
-  if (type === "payroll") {
-    return "AI Summary: Payroll file. Review employee totals, submission deadline, and approval status.";
-  }
-
-  if (type === "audit") {
-    return "AI Summary: Audit document. Review evidence quality, open findings, and manager signoff.";
-  }
-
-  if (type === "tax") {
-    return "AI Summary: Tax document. Check missing declarations, submission period, and supporting files.";
-  }
-
-  return "AI Summary: Client report. Review key findings, unresolved items, and next action owner.";
-}
-
-function getAiInsights(tasks: DisplayTask[], documents: ClientDocumentRecord[], activities: ClientActivityRecord[]) {
+function getAiInsights(
+  tasks: DisplayTask[],
+  documents: ClientDocumentRecord[],
+  activities: ClientActivityRecord[],
+) {
   const insights = new Set<string>();
   const activeTasks = tasks.filter((task) => task.status !== "done").length;
   const lastActivity = activities
@@ -405,9 +400,13 @@ export default async function ClientPage({ params }: ClientPageProps) {
   const savedActivities = await getClientActivities(client.id);
   const savedDocuments = await getClientDocuments(client.id);
   const tasks = savedTasks.length > 0 ? savedTasks.map(mapTask) : fallbackTasks;
-  const activities = savedActivities.length > 0 ? savedActivities : fallbackActivities;
-  const documents = savedDocuments.length > 0 ? savedDocuments : fallbackDocuments;
-  const notes = activities.filter((activity) => activity.type === "comment" || activity.type === "update");
+  const activities =
+    savedActivities.length > 0 ? savedActivities : fallbackActivities;
+  const documents =
+    savedDocuments.length > 0 ? savedDocuments : fallbackDocuments;
+  const notes = activities.filter(
+    (activity) => activity.type === "comment" || activity.type === "update",
+  );
   const aiInsights = getAiInsights(tasks, documents, activities);
 
   return (
@@ -416,7 +415,9 @@ export default async function ClientPage({ params }: ClientPageProps) {
         <div>
           <p className={styles.eyebrow}>Client file</p>
           <h2>{client.name}</h2>
-          <p>Review client status, tasks, documents, and activity in one place.</p>
+          <p>
+            Review client status, tasks, documents, and activity in one place.
+          </p>
         </div>
         <Link className={styles.textButton} href="/clients">
           Back to clients
@@ -429,7 +430,9 @@ export default async function ClientPage({ params }: ClientPageProps) {
             <p className={styles.eyebrow}>Client overview</p>
             <h3>Account details</h3>
           </div>
-          <span className={`${styles.statusTag} ${styles.statusActive}`}>{status}</span>
+          <span className={`${styles.statusTag} ${styles.statusActive}`}>
+            {status}
+          </span>
         </div>
         <dl className={styles.detailGrid}>
           <div>
@@ -452,7 +455,9 @@ export default async function ClientPage({ params }: ClientPageProps) {
       <aside className={styles.aiSummary}>
         <div className={styles.sectionHeader}>
           <h3>AI Summary</h3>
-          <span>{aiInsights.length} insight{aiInsights.length === 1 ? "" : "s"}</span>
+          <span>
+            {aiInsights.length} insight{aiInsights.length === 1 ? "" : "s"}
+          </span>
         </div>
         <ul className={styles.cleanList}>
           {aiInsights.length > 0 ? (
@@ -526,16 +531,26 @@ export default async function ClientPage({ params }: ClientPageProps) {
                 <div>
                   <span>{document.file_name}</span>
                   <small>
-                    {document.type ?? "document"} - {formatDetailDate(document.created_at)}
+                    {document.type ?? "document"} -{" "}
+                    {formatDetailDate(document.created_at)}
                   </small>
                 </div>
                 <div className={styles.documentActions}>
                   <details className={styles.documentInfo}>
-                    <summary aria-label={`Show AI summary for ${document.file_name}`}>i</summary>
-                    <p>{getDocumentSummary(document)}</p>
+                    <summary
+                      aria-label={`Show AI summary for ${document.file_name}`}
+                    >
+                      i
+                    </summary>
+                    <p>{document.summary?.trim() || "No summary saved for this document yet."}</p>
                   </details>
                   {document.file_url ? (
-                    <a className={styles.textButton} href={document.file_url} rel="noreferrer" target="_blank">
+                    <a
+                      className={styles.textButton}
+                      href={document.file_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
                       Open
                     </a>
                   ) : (

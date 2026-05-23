@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/app/lib/supabase";
+import { summarizeFile } from "@/app/lib/summarize";
 
 export type CreateClientState = {
   message: string;
@@ -266,8 +267,6 @@ export async function createClientDocument(
   const storagePath = `${clientId}/${Date.now()}-${safeFileName}`;
   const fileBuffer = await file.arrayBuffer();
 
-  console.log("1. Uploading to storage path:", storagePath);
-
   const { error: uploadError } = await supabase.storage
     .from(documentBucketName)
     .upload(storagePath, fileBuffer, {
@@ -275,13 +274,18 @@ export async function createClientDocument(
       upsert: false,
     });
 
-  console.log("2. Upload error:", uploadError);
+  if (uploadError) {
+    return {
+      status: "error",
+      message: uploadError.message,
+    };
+  }
 
   const { data: publicUrlData } = supabase.storage
     .from(documentBucketName)
     .getPublicUrl(storagePath);
 
-  console.log("3. Public URL:", publicUrlData.publicUrl);
+  const summary = await summarizeFile(publicUrlData.publicUrl, file.name);
 
   const insertPayload = {
     client_id: clientId,
@@ -289,16 +293,14 @@ export async function createClientDocument(
     file_name: file.name,
     file_url: publicUrlData.publicUrl,
     type,
+    summary,
   };
 
-  console.log("4. Inserting into DB:", insertPayload);
 
-  const { data: insertData, error } = await supabase
+  const { error } = await supabase
     .from("documents")
     .insert(insertPayload)
-    .select(); // <-- add .select() so you see what actually got inserted
-
-  console.log("5. Insert result:", insertData, "error:", error);
+    .select();
 
   if (error) {
     return {
