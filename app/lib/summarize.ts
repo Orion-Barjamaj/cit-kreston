@@ -103,8 +103,9 @@ Exactly this shape:
 
     const raw = result.response.text().trim();
     return JSON.parse(raw);
-  } catch (err: any) {
-    console.error("Extract client failed:", err?.message);
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    console.error("Extract client failed:", error.message);
     return null;
   }
 }

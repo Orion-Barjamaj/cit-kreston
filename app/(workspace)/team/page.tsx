@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { getSupabaseServerClient } from "@/app/lib/supabase";
 import { addTeamMember } from "./actions";
+import RoleGroup from "./role-group";
 import styles from "./team.module.css";
 
 type UserRecord = {
@@ -39,6 +40,11 @@ type TeamData = {
 
 const roles = ["Partner", "Manager", "Senior", "Associate", "Junior"];
 const completedStatuses = new Set(["done", "completed", "inactive", "archived"]);
+const roleGroups = [
+  { key: "managers", label: "Managers", roles: new Set(["manager", "partner"]) },
+  { key: "seniors", label: "Seniors", roles: new Set(["senior"]) },
+  { key: "juniors", label: "Juniors", roles: new Set(["junior", "associate"]) },
+];
 
 function getUniqueDepartments(departments: DepartmentRecord[]) {
   const departmentsByName = new Map<string, DepartmentRecord>();
@@ -114,14 +120,11 @@ function isActiveStatus(status: string | null) {
 export default async function TeamPage() {
   const { clients, departments, error, isConfigured, tasks, users } = await getTeamData();
   const uniqueDepartments = getUniqueDepartments(departments);
-  const departmentsById = new Map(departments.map((department) => [department.id, department.name]));
-  const usersByDepartment = uniqueDepartments.map((department) => ({
-    department,
-    users: users.filter(
-      (user) => departmentsById.get(user.department_id ?? 0)?.trim().toLowerCase() === department.name.trim().toLowerCase(),
-    ),
+  const groupedUsers = roleGroups.map((group) => ({
+    ...group,
+    users: users.filter((user) => group.roles.has(user.role.toLowerCase())),
   }));
-  const unassignedUsers = users.filter((user) => !user.department_id || !departmentsById.has(user.department_id));
+  const otherUsers = users.filter((user) => !roleGroups.some((group) => group.roles.has(user.role.toLowerCase())));
 
   function getAssignedTasksCount(userId: number) {
     return tasks.filter((task) => task.assigned_to === userId && isActiveStatus(task.status)).length;
@@ -131,13 +134,25 @@ export default async function TeamPage() {
     return clients.filter((client) => client.assigned_manager_id === userId && isActiveStatus(client.status)).length;
   }
 
+  function mapMember(user: UserRecord) {
+    return {
+      activeClientsCount: getActiveClientsCount(user.id),
+      email: user.email,
+      id: user.id,
+      initials: getInitials(user),
+      name: user.name,
+      role: formatRole(user.role),
+      tasksCount: getAssignedTasksCount(user.id),
+    };
+  }
+
   return (
     <section className={styles.pageStack}>
       <div className={styles.pageHeader}>
         <div>
           <p className={styles.eyebrow}>People directory</p>
           <h2>Team</h2>
-          <p>View members by department, see workload, and add new staff.</p>
+          <p>View members by seniority, see workload, and add new staff.</p>
         </div>
       </div>
 
@@ -185,84 +200,24 @@ export default async function TeamPage() {
 
       <div className={styles.teamLayout}>
         <article className={styles.panel}>
-          <h3>Departments</h3>
+          <h3>Team by role</h3>
           <div className={styles.departmentGroups}>
-            {usersByDepartment.map(({ department, users: departmentUsers }) => (
-              <section className={styles.departmentGroup} key={department.id}>
-                <div className={styles.departmentHeader}>
-                  <strong>{department.name}</strong>
-                  <span>{departmentUsers.length} member{departmentUsers.length === 1 ? "" : "s"}</span>
-                </div>
-                <div className={styles.memberList}>
-                  {departmentUsers.length > 0 ? (
-                    departmentUsers.map((user) => (
-                      <details className={styles.memberCard} key={user.id}>
-                        <summary>
-                          <span className={styles.avatar}>{getInitials(user)}</span>
-                          <span>
-                            <strong>{user.name}</strong>
-                            <small>{formatRole(user.role)}</small>
-                            {user.email ? <small>{user.email}</small> : null}
-                          </span>
-                        </summary>
-                        <div className={styles.memberStats}>
-                          <span>{getAssignedTasksCount(user.id)} assigned tasks</span>
-                          <span>{getActiveClientsCount(user.id)} active clients</span>
-                        </div>
-                      </details>
-                    ))
-                  ) : (
-                    <p>No members in this department yet.</p>
-                  )}
-                </div>
-              </section>
+            {groupedUsers.map((group) => (
+              <RoleGroup key={group.key} label={group.label} members={group.users.map(mapMember)} />
             ))}
 
-            {unassignedUsers.length > 0 ? (
-              <section className={styles.departmentGroup}>
-                <div className={styles.departmentHeader}>
-                  <strong>Unassigned</strong>
-                  <span>{unassignedUsers.length} member{unassignedUsers.length === 1 ? "" : "s"}</span>
-                </div>
-                <div className={styles.memberList}>
-                  {unassignedUsers.map((user) => (
-                    <details className={styles.memberCard} key={user.id}>
-                      <summary>
-                        <span className={styles.avatar}>{getInitials(user)}</span>
-                          <span>
-                            <strong>{user.name}</strong>
-                            <small>{formatRole(user.role)}</small>
-                            {user.email ? <small>{user.email}</small> : null}
-                          </span>
-                      </summary>
-                      <div className={styles.memberStats}>
-                        <span>{getAssignedTasksCount(user.id)} assigned tasks</span>
-                        <span>{getActiveClientsCount(user.id)} active clients</span>
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              </section>
+            {otherUsers.length > 0 ? (
+              <RoleGroup label="Other" members={otherUsers.map(mapMember)} />
             ) : null}
           </div>
         </article>
 
         <aside className={styles.panel}>
-          <h3>Hierarchy</h3>
+          <h3>Departments</h3>
           <ul className={styles.hierarchyList}>
             {uniqueDepartments.map((department) => (
               <li key={department.id}>
                 <strong>{department.name}</strong>
-                <span>
-                  {users
-                    .filter(
-                      (user) =>
-                        departmentsById.get(user.department_id ?? 0)?.trim().toLowerCase() ===
-                        department.name.trim().toLowerCase(),
-                    )
-                    .map((user) => user.name)
-                    .join(", ") || "No members"}
-                </span>
               </li>
             ))}
           </ul>

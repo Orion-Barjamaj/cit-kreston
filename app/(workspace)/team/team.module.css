@@ -68,7 +68,15 @@
 .hierarchyList {
   display: grid;
   gap: 12px;
+}
+
+.departmentGroups,
+.hierarchyList {
   margin-top: 14px;
+}
+
+.memberList {
+  padding: 12px;
 }
 
 .departmentGroup {
@@ -76,8 +84,9 @@
   gap: 10px;
   border: 1px solid #edf0f4;
   border-radius: 8px;
-  padding: 12px;
-  background: #f8fafc;
+  padding: 0;
+  overflow: hidden;
+  background: #ffffff;
 }
 
 .departmentHeader {
@@ -85,6 +94,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 54px;
+  border-bottom: 1px solid #edf0f4;
+  padding: 0 14px;
+  background: #f8fafc;
 }
 
 .departmentHeader strong {
@@ -102,24 +115,60 @@
   font-weight: 700;
 }
 
+.groupActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupActions button {
+  min-width: 72px;
+  min-height: 30px;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #eef2ff;
+  color: #4338ca;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.groupActions button:hover {
+  border-color: #818cf8;
+  background: #e0e7ff;
+  color: #312e81;
+}
+
+.groupActions button::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.groupActions button[aria-expanded="false"]::after {
+  transform: rotate(-45deg);
+}
+
 .memberCard {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #ffffff;
 }
 
-.memberCard summary {
+.memberMain {
   min-height: 58px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  cursor: pointer;
-  list-style: none;
-}
-
-.memberCard summary::-webkit-details-marker {
-  display: none;
 }
 
 .memberCard strong {

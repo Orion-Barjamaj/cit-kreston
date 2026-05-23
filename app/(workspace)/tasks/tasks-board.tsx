@@ -96,6 +96,20 @@ function getMemberLabel(member: TaskMemberOption) {
   return `${member.name} - ${member.role.charAt(0).toUpperCase() + member.role.slice(1)}`;
 }
 
+function getPriorityClassName(priority: string) {
+  const normalizedPriority = priority.toLowerCase();
+
+  if (normalizedPriority === "high") {
+    return `${styles.categoryTag} ${styles.priorityHigh}`;
+  }
+
+  if (normalizedPriority === "low") {
+    return `${styles.categoryTag} ${styles.priorityLow}`;
+  }
+
+  return `${styles.categoryTag} ${styles.priorityMedium}`;
+}
+
 function mapTaskRecord(task: TaskRecord, membersById: Map<number, TaskMemberOption>): BoardTask {
   const assignedMember = task.assigned_to ? membersById.get(task.assigned_to) : null;
   const assignee = assignedMember ? assignedMember.name : "Unassigned";
@@ -126,14 +140,14 @@ function TaskCard({ task }: { task: BoardTask }) {
     >
       <div className={styles.taskCardSwing}>
         <div className={styles.taskCardTop}>
-          <span className={styles.categoryTag}>{task.priority}</span>
+          <span className={getPriorityClassName(task.priority)}>{task.priority}</span>
           <span className={styles.avatar}>{getInitials(task.assignee)}</span>
         </div>
         <h4>{task.title}</h4>
         <p className={styles.taskDescription}>{task.description}</p>
         <div className={styles.taskMeta}>
           <span>{task.deadline}</span>
-          <span>{task.assignee}</span>
+          <strong>{task.assignee}</strong>
         </div>
       </div>
     </article>
