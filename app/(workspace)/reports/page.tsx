@@ -232,7 +232,6 @@ export default async function ReportsPage() {
           <h2>Reports</h2>
           <p>Simple workload, progress, activity, and AI insight summaries.</p>
         </div>
-        <div className={styles.aiBox}>AI: {getAiInsight(tasks)}</div>
       </div>
 
       {!isConfigured ? (

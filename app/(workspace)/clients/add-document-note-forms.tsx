@@ -3,10 +3,10 @@
 import { useActionState, useEffect, useRef } from "react";
 import { useState } from "react";
 import {
-  createClientActivity,
   createClientDocument,
-  type CreateActivityState,
+  createClientTimelineNote,
   type CreateDocumentState,
+  type CreateTimelineNoteState,
 } from "./actions";
 import styles from "./clients.module.css";
 
@@ -15,22 +15,17 @@ const initialDocumentState: CreateDocumentState = {
   status: "idle",
 };
 
-const initialActivityState: CreateActivityState = {
+const initialTimelineNoteState: CreateTimelineNoteState = {
   message: "",
   status: "idle",
 };
 
-export default function AddDocumentNoteForms({ clientId }: { clientId: number }) {
+export function AddDocumentForm({ clientId }: { clientId: number }) {
   const documentFormRef = useRef<HTMLFormElement>(null);
-  const activityFormRef = useRef<HTMLFormElement>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [documentState, documentAction, isDocumentPending] = useActionState(
     createClientDocument,
     initialDocumentState,
-  );
-  const [activityState, activityAction, isActivityPending] = useActionState(
-    createClientActivity,
-    initialActivityState,
   );
 
   useEffect(() => {
@@ -38,12 +33,6 @@ export default function AddDocumentNoteForms({ clientId }: { clientId: number })
       documentFormRef.current?.reset();
     }
   }, [documentState.status]);
-
-  useEffect(() => {
-    if (activityState.status === "success") {
-      activityFormRef.current?.reset();
-    }
-  }, [activityState.status]);
 
   return (
     <div className={styles.documentNoteForms}>
@@ -92,33 +81,42 @@ export default function AddDocumentNoteForms({ clientId }: { clientId: number })
           </div>
         </form>
       </details>
+    </div>
+  );
+}
 
+export function AddTimelineNoteForm({ clientId }: { clientId: number }) {
+  const timelineFormRef = useRef<HTMLFormElement>(null);
+  const [timelineNoteState, timelineNoteAction, isTimelineNotePending] = useActionState(
+    createClientTimelineNote,
+    initialTimelineNoteState,
+  );
+
+  useEffect(() => {
+    if (timelineNoteState.status === "success") {
+      timelineFormRef.current?.reset();
+    }
+  }, [timelineNoteState.status]);
+
+  return (
+    <div className={styles.documentNoteForms}>
       <details className={styles.inlineFormPanel}>
-        <summary>+ Add note</summary>
-        <form action={activityAction} ref={activityFormRef}>
+        <summary>+ Add timeline note</summary>
+        <form action={timelineNoteAction} ref={timelineFormRef}>
           <input name="client_id" type="hidden" value={clientId} />
-          <div className={styles.noteFormGrid}>
+          <div className={styles.timelineNoteGrid}>
             <label>
-              Note
-              <textarea name="content" placeholder="Add client activity or note" required disabled={isActivityPending} />
-            </label>
-            <label>
-              Type
-              <select name="type" defaultValue="comment" disabled={isActivityPending}>
-                <option value="comment">Comment</option>
-                <option value="meeting">Meeting</option>
-                <option value="update">Update</option>
-                <option value="alert">Alert</option>
-              </select>
+              Timeline note
+              <textarea name="text" placeholder="Add a client timeline note" required disabled={isTimelineNotePending} />
             </label>
           </div>
           <div className={styles.addClientActions}>
-            <button className={styles.primaryButton} type="submit" disabled={isActivityPending}>
-              {isActivityPending ? "Adding..." : "Add note"}
+            <button className={styles.primaryButton} type="submit" disabled={isTimelineNotePending}>
+              {isTimelineNotePending ? "Adding..." : "Add note"}
             </button>
-            {activityState.message ? (
-              <p className={activityState.status === "error" ? styles.formError : styles.formSuccess}>
-                {activityState.message}
+            {timelineNoteState.message ? (
+              <p className={timelineNoteState.status === "error" ? styles.formError : styles.formSuccess}>
+                {timelineNoteState.message}
               </p>
             ) : null}
           </div>

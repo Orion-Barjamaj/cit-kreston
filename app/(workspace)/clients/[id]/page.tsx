@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import AddDocumentNoteForms from "../add-document-note-forms";
+import { AddDocumentForm, AddTimelineNoteForm } from "../add-document-note-forms";
 import AddTaskForm from "../add-task-form";
+import DocumentSummaryPopover from "../document-summary-popover";
 import styles from "../clients.module.css";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
@@ -44,6 +45,14 @@ type ClientActivityRecord = {
   created_at: string | null;
 };
 
+type ClientTimelineNoteRecord = {
+  id: number;
+  client_id: number | null;
+  uploaded_by: string | null;
+  text: string;
+  created_at: string | null;
+};
+
 type ClientDocumentRecord = {
   id: number;
   client_id: number | null;
@@ -54,6 +63,13 @@ type ClientDocumentRecord = {
   created_at: string | null;
   summary: string | null;
   last_updated: string | null;
+};
+
+type TimelineItem = {
+  id: string;
+  content: string;
+  label: string;
+  created_at: string | null;
 };
 
 type DisplayTask = {
@@ -235,6 +251,22 @@ async function getClientActivities(clientId: number) {
   return (data ?? []) as ClientActivityRecord[];
 }
 
+async function getClientTimelineNotes(clientId: number) {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return [] as ClientTimelineNoteRecord[];
+  }
+
+  const { data } = await supabase
+    .from("notes")
+    .select("id, client_id, uploaded_by, text, created_at")
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as ClientTimelineNoteRecord[];
+}
+
 async function getClientDocuments(clientId: number) {
   const supabase = getSupabaseServerClient();
 
@@ -377,6 +409,31 @@ function getAiInsights(
   return Array.from(insights);
 }
 
+function getTimelineItems(
+  activities: ClientActivityRecord[],
+  timelineNotes: ClientTimelineNoteRecord[],
+) {
+  return [
+    ...timelineNotes.map((note) => ({
+      id: `note-${note.id}`,
+      content: note.text,
+      label: note.uploaded_by ? `Note by ${note.uploaded_by}` : "note",
+      created_at: note.created_at,
+    })),
+    ...activities.map((activity) => ({
+      id: `activity-${activity.id}`,
+      content: activity.content,
+      label: activity.type ?? "update",
+      created_at: activity.created_at,
+    })),
+  ].sort((first, second) => {
+    const firstTime = new Date(first.created_at ?? "").getTime();
+    const secondTime = new Date(second.created_at ?? "").getTime();
+
+    return (Number.isNaN(secondTime) ? 0 : secondTime) - (Number.isNaN(firstTime) ? 0 : firstTime);
+  }) satisfies TimelineItem[];
+}
+
 export default async function ClientPage({ params }: ClientPageProps) {
   const { id } = await params;
   const { client, isConfigured } = await getClient(id);
@@ -398,15 +455,14 @@ export default async function ClientPage({ params }: ClientPageProps) {
   const status = displayStatus(client.status);
   const savedTasks = await getClientTasks(client.id);
   const savedActivities = await getClientActivities(client.id);
+  const savedTimelineNotes = await getClientTimelineNotes(client.id);
   const savedDocuments = await getClientDocuments(client.id);
   const tasks = savedTasks.length > 0 ? savedTasks.map(mapTask) : fallbackTasks;
   const activities =
     savedActivities.length > 0 ? savedActivities : fallbackActivities;
   const documents =
     savedDocuments.length > 0 ? savedDocuments : fallbackDocuments;
-  const notes = activities.filter(
-    (activity) => activity.type === "comment" || activity.type === "update",
-  );
+  const timelineItems = getTimelineItems(activities, savedTimelineNotes);
   const aiInsights = getAiInsights(tasks, documents, activities);
 
   return (
@@ -453,19 +509,24 @@ export default async function ClientPage({ params }: ClientPageProps) {
       </article>
 
       <aside className={styles.aiSummary}>
-        <div className={styles.sectionHeader}>
-          <h3>AI Summary</h3>
-          <span>
-            {aiInsights.length} insight{aiInsights.length === 1 ? "" : "s"}
-          </span>
+        <span className={styles.aiSparkle} aria-hidden="true">
+          ✦
+        </span>
+        <div>
+          <div className={styles.sectionHeader}>
+            <h3>AI Summary. Generated automatically by AI.</h3>
+            <span>
+              {aiInsights.length} insight{aiInsights.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <ul className={styles.cleanList}>
+            {aiInsights.length > 0 ? (
+              aiInsights.map((insight) => <li key={insight}>{insight}</li>)
+            ) : (
+              <li>No urgent client risks detected.</li>
+            )}
+          </ul>
         </div>
-        <ul className={styles.cleanList}>
-          {aiInsights.length > 0 ? (
-            aiInsights.map((insight) => <li key={insight}>{insight}</li>)
-          ) : (
-            <li>No urgent client risks detected.</li>
-          )}
-        </ul>
       </aside>
 
       <article className={styles.panel}>
@@ -511,20 +572,21 @@ export default async function ClientPage({ params }: ClientPageProps) {
       <section className={styles.twoColumn}>
         <article className={styles.panel}>
           <h3>Activity Timeline</h3>
+          <AddTimelineNoteForm clientId={client.id} />
           <ol className={styles.timelineList}>
-            {activities.map((activity) => (
-              <li key={activity.id}>
-                <time>{formatDetailDate(activity.created_at)}</time>
-                <span>{activity.content}</span>
-                <small>{activity.type ?? "update"}</small>
+            {timelineItems.map((item) => (
+              <li key={item.id}>
+                <time>{formatDetailDate(item.created_at)}</time>
+                <span>{item.content}</span>
+                <small>{item.label}</small>
               </li>
             ))}
           </ol>
         </article>
 
         <article className={styles.panel}>
-          <h3>Documents & Notes</h3>
-          <AddDocumentNoteForms clientId={client.id} />
+          <h3>Documents</h3>
+          <AddDocumentForm clientId={client.id} />
           <ul className={styles.documentList}>
             {documents.map((document) => (
               <li key={document.id}>
@@ -536,14 +598,10 @@ export default async function ClientPage({ params }: ClientPageProps) {
                   </small>
                 </div>
                 <div className={styles.documentActions}>
-                  <details className={styles.documentInfo}>
-                    <summary
-                      aria-label={`Show AI summary for ${document.file_name}`}
-                    >
-                      i
-                    </summary>
-                    <p>{document.summary?.trim() || "No summary saved for this document yet."}</p>
-                  </details>
+                  <DocumentSummaryPopover
+                    fileName={document.file_name}
+                    summary={document.summary?.trim() || "No summary saved for this document yet."}
+                  />
                   {document.file_url ? (
                     <a
                       className={styles.textButton}
@@ -560,15 +618,6 @@ export default async function ClientPage({ params }: ClientPageProps) {
               </li>
             ))}
           </ul>
-          <div className={styles.noteList}>
-            {notes.map((note) => (
-              <div key={note.id}>
-                <strong>{note.type ?? "note"}</strong>
-                <p>{note.content}</p>
-                <small>{formatDetailDate(note.created_at)}</small>
-              </div>
-            ))}
-          </div>
         </article>
       </section>
     </section>

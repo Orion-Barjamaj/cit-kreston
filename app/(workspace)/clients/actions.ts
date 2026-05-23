@@ -12,6 +12,7 @@ export type CreateClientState = {
 export type CreateTaskState = CreateClientState;
 export type CreateDocumentState = CreateClientState;
 export type CreateActivityState = CreateClientState;
+export type CreateTimelineNoteState = CreateClientState;
 
 const validStatuses = new Set(["active", "delayed", "onboarding", "completed"]);
 const validTaskStatuses = new Set(["todo", "progress", "review", "done"]);
@@ -374,5 +375,56 @@ export async function createClientActivity(
   return {
     status: "success",
     message: "Note was added.",
+  };
+}
+
+export async function createClientTimelineNote(
+  _previousState: CreateTimelineNoteState,
+  formData: FormData,
+): Promise<CreateTimelineNoteState> {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return {
+      status: "error",
+      message: "Supabase is not configured.",
+    };
+  }
+
+  const clientId = getOptionalPositiveInt(formData, "client_id");
+  const text = getTextValue(formData, "text");
+
+  if (!clientId) {
+    return {
+      status: "error",
+      message: "Client ID is invalid.",
+    };
+  }
+
+  if (!text) {
+    return {
+      status: "error",
+      message: "Note content is required.",
+    };
+  }
+
+  const { error } = await supabase.from("notes").insert({
+    client_id: clientId,
+    uploaded_by: null,
+    text,
+  });
+
+  if (error) {
+    return {
+      status: "error",
+      message: error.message,
+    };
+  }
+
+  revalidatePath(`/clients/${clientId}`);
+
+  return {
+    status: "success",
+    message: "Timeline note was added.",
   };
 }
