@@ -12,15 +12,16 @@ export type CreateTaskState = CreateClientState;
 export type CreateDocumentState = CreateClientState;
 export type CreateActivityState = CreateClientState;
 
-const validStatuses = new Set([
-  "active",
-  "delayed",
-  "onboarding",
-  "completed",
-]);
+const validStatuses = new Set(["active", "delayed", "onboarding", "completed"]);
 const validTaskStatuses = new Set(["todo", "progress", "review", "done"]);
 const validTaskPriorities = new Set(["low", "medium", "high"]);
-const validDocumentTypes = new Set(["contract", "payroll", "audit", "tax", "report"]);
+const validDocumentTypes = new Set([
+  "contract",
+  "payroll",
+  "audit",
+  "tax",
+  "report",
+]);
 const validActivityTypes = new Set(["comment", "meeting", "update", "alert"]);
 const documentBucketName = "documents";
 
@@ -47,15 +48,10 @@ export async function createClient(
   const industry = getTextValue(formData, "industry");
   const status = getTextValue(formData, "status") || "active";
 
-  const managerIdValue = getTextValue(
-    formData,
-    "assigned_manager_id",
-  );
+  const managerIdValue = getTextValue(formData, "assigned_manager_id");
 
   const assignedManagerId =
-    managerIdValue !== ""
-      ? parseInt(managerIdValue, 10)
-      : null;
+    managerIdValue !== "" ? parseInt(managerIdValue, 10) : null;
 
   if (!name) {
     return {
@@ -73,8 +69,7 @@ export async function createClient(
 
   if (
     assignedManagerId !== null &&
-    (Number.isNaN(assignedManagerId) ||
-      assignedManagerId <= 0)
+    (Number.isNaN(assignedManagerId) || assignedManagerId <= 0)
   ) {
     return {
       status: "error",
@@ -84,13 +79,12 @@ export async function createClient(
 
   // VERIFY MANAGER EXISTS
   if (assignedManagerId !== null) {
-    const { data: manager, error: managerError } =
-      await supabase
-        .from("users")
-        .select("id")
-        .eq("id", assignedManagerId)
-        .eq("role", "manager")
-        .single();
+    const { data: manager, error: managerError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", assignedManagerId)
+      .eq("role", "manager")
+      .single();
 
     if (managerError || !manager) {
       return {
@@ -100,14 +94,12 @@ export async function createClient(
     }
   }
 
-  const { error } = await supabase
-    .from("clients")
-    .insert({
-      name,
-      industry: industry || null,
-      status,
-      assigned_manager_id: assignedManagerId,
-    });
+  const { error } = await supabase.from("clients").insert({
+    name,
+    industry: industry || null,
+    status,
+    assigned_manager_id: assignedManagerId,
+  });
 
   if (error) {
     return {
@@ -133,7 +125,9 @@ function getOptionalPositiveInt(formData: FormData, key: string) {
 
   const numberValue = parseInt(value, 10);
 
-  return Number.isNaN(numberValue) || numberValue <= 0 ? undefined : numberValue;
+  return Number.isNaN(numberValue) || numberValue <= 0
+    ? undefined
+    : numberValue;
 }
 
 export async function createClientTask(
@@ -271,6 +265,9 @@ export async function createClientDocument(
   const safeFileName = sanitizeFileName(file.name);
   const storagePath = `${clientId}/${Date.now()}-${safeFileName}`;
   const fileBuffer = await file.arrayBuffer();
+
+  console.log("1. Uploading to storage path:", storagePath);
+
   const { error: uploadError } = await supabase.storage
     .from(documentBucketName)
     .upload(storagePath, fileBuffer, {
@@ -278,22 +275,30 @@ export async function createClientDocument(
       upsert: false,
     });
 
-  if (uploadError) {
-    return {
-      status: "error",
-      message: uploadError.message,
-    };
-  }
+  console.log("2. Upload error:", uploadError);
 
-  const { data: publicUrlData } = supabase.storage.from(documentBucketName).getPublicUrl(storagePath);
+  const { data: publicUrlData } = supabase.storage
+    .from(documentBucketName)
+    .getPublicUrl(storagePath);
 
-  const { error } = await supabase.from("documents").insert({
+  console.log("3. Public URL:", publicUrlData.publicUrl);
+
+  const insertPayload = {
     client_id: clientId,
     uploaded_by: null,
     file_name: file.name,
     file_url: publicUrlData.publicUrl,
     type,
-  });
+  };
+
+  console.log("4. Inserting into DB:", insertPayload);
+
+  const { data: insertData, error } = await supabase
+    .from("documents")
+    .insert(insertPayload)
+    .select(); // <-- add .select() so you see what actually got inserted
+
+  console.log("5. Insert result:", insertData, "error:", error);
 
   if (error) {
     return {

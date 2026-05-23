@@ -252,7 +252,8 @@
 }
 
 .documentFormGrid {
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, 0.35fr);
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.45fr);
+  align-items: end;
 }
 
 .noteFormGrid {
@@ -300,16 +301,15 @@
 }
 
 .filePicker {
-  min-height: 108px;
+  min-height: 64px;
   position: relative;
   display: grid !important;
   align-content: center;
-  justify-items: center;
-  gap: 8px !important;
-  place-items: center;
-  border: 1px dashed #b8c7e6;
+  justify-items: start;
+  gap: 4px !important;
+  border: 1px solid #dedede;
   border-radius: 8px;
-  padding: 16px;
+  padding: 10px 12px;
   background: #ffffff;
   cursor: pointer;
 }
@@ -327,11 +327,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
-  border-radius: 8px;
-  padding: 0 16px;
-  background: #2f66e8;
-  color: #ffffff;
+  min-height: auto;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: #111827;
   font-size: 13px;
   font-weight: 800;
 }
@@ -344,6 +344,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.documentTypeField select {
+  min-height: 64px;
+}
+
+.documentSubmitActions {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .formError,

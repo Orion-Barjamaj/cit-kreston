@@ -69,7 +69,7 @@ export default function AddDocumentNoteForms({ clientId }: { clientId: number })
                 <small>Select a document from your computer</small>
               )}
             </label>
-            <label>
+            <label className={styles.documentTypeField}>
               Type
               <select name="type" defaultValue="report" disabled={isDocumentPending}>
                 <option value="contract">Contract</option>
@@ -80,7 +80,7 @@ export default function AddDocumentNoteForms({ clientId }: { clientId: number })
               </select>
             </label>
           </div>
-          <div className={styles.addClientActions}>
+          <div className={`${styles.addClientActions} ${styles.documentSubmitActions}`}>
             <button className={styles.primaryButton} type="submit" disabled={isDocumentPending}>
               {isDocumentPending ? "Adding..." : "Add document"}
             </button>
