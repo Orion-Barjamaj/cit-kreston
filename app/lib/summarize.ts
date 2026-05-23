@@ -68,7 +68,7 @@ Exactly this shape:
 {
   "name": "company or person name",
   "industry": "their industry e.g. Telecommunications, Banking, Retail",
-  "risk": "low or medium or high based on contract terms",
+  "risk": "a value from 1-10 where 1 is safe and 10 is very risky",
   "assigned_manager": "full name of the Kreston staff member responsible, or null if not mentioned"
 }`;
 

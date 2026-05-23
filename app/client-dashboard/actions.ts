@@ -85,8 +85,8 @@ export async function uploadClientPortalDocument(
   if (note) {
     await supabase.from("notes").insert({
       client_id: clientId,
-      uploaded_by: "Client",
-      text: `Uploaded ${file.name}: ${note}`,
+      uploaded_by: null,
+      text: `Client uploaded ${file.name}: ${note}`,
     });
   }
 
@@ -119,8 +119,8 @@ export async function sendClientPortalQuestion(
 
   const { error } = await supabase.from("notes").insert({
     client_id: clientId,
-    uploaded_by: "Client",
-    text,
+    uploaded_by: null,
+    text: `Client: ${text}`,
   });
 
   if (error) {

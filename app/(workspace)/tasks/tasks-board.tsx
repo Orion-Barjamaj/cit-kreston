@@ -20,6 +20,7 @@ import styles from "./tasks.module.css";
 type BoardTask = {
   assignedTo: number | null;
   departmentId: number | null;
+  departmentName: string;
   id: number;
   title: string;
   description: string;
@@ -56,21 +57,13 @@ type TasksBoardProps = {
 type DepartmentTab = {
   id: string;
   label: string;
+  departmentId: number | "all";
 };
 
 const statusColumns: { id: TaskStatus; title: string }[] = [
   { id: "juniors", title: "Juniors" },
   { id: "seniors", title: "Seniors" },
   { id: "managers", title: "Managers" },
-];
-
-const departmentTabs: DepartmentTab[] = [
-  { id: "all", label: "All" },
-  { id: "audit-advisory", label: "Audit & Advisory" },
-  { id: "accounting-tax", label: "Accounting & Tax" },
-  { id: "bookkeeping-payroll", label: "Bookkeeping & Payroll" },
-  { id: "legal", label: "Legal" },
-  { id: "advisory", label: "Advisory" },
 ];
 
 const validStatuses = new Set<TaskStatus>(statusColumns.map((column) => column.id));
@@ -139,28 +132,15 @@ function getMembersForStatus(members: TaskMemberOption[], status: TaskStatus) {
   return members.filter((member) => getStatusFromRole(member.role) === status);
 }
 
-function normalizeDepartmentName(name: string) {
-  return name.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function getDepartmentIdForTab(tab: DepartmentTab, departments: TaskDepartmentOption[]) {
-  if (tab.id === "all") {
-    return "all";
-  }
-
-  const normalizedLabel = normalizeDepartmentName(tab.label);
-  const exactDepartment = departments.find((department) => normalizeDepartmentName(department.name) === normalizedLabel);
-
-  if (exactDepartment) {
-    return exactDepartment.id;
-  }
-
-  const labelWords = normalizedLabel.split(" ");
-  return departments.find((department) => {
-    const normalizedDepartment = normalizeDepartmentName(department.name);
-
-    return labelWords.every((word) => normalizedDepartment.includes(word));
-  })?.id;
+function getDepartmentTabs(departments: TaskDepartmentOption[]): DepartmentTab[] {
+  return [
+    { departmentId: "all", id: "all", label: "All" },
+    ...departments.map((department) => ({
+      departmentId: department.id,
+      id: String(department.id),
+      label: department.name,
+    })),
+  ];
 }
 
 function getPriorityClassName(priority: string) {
@@ -177,13 +157,18 @@ function getPriorityClassName(priority: string) {
   return `${styles.categoryTag} ${styles.priorityMedium}`;
 }
 
-function mapTaskRecord(task: TaskRecord, membersById: Map<number, TaskMemberOption>): BoardTask {
+function mapTaskRecord(
+  task: TaskRecord,
+  membersById: Map<number, TaskMemberOption>,
+  departmentsById: Map<number, TaskDepartmentOption>,
+): BoardTask {
   const assignedMember = task.assigned_to ? membersById.get(task.assigned_to) : null;
   const assignee = assignedMember ? assignedMember.name : "Unassigned";
 
   return {
     assignedTo: task.assigned_to,
     departmentId: task.department_id,
+    departmentName: task.department_id ? departmentsById.get(task.department_id)?.name ?? "Unassigned department" : "Unassigned department",
     id: task.id,
     title: task.title,
     description: task.description?.trim() || "No description",
@@ -216,6 +201,7 @@ function TaskCard({ task }: { task: BoardTask }) {
         <p className={styles.taskDescription}>{task.description}</p>
         <div className={styles.taskMeta}>
           <span>{task.deadline}</span>
+          <span>{task.departmentName}</span>
           <strong>{task.assignee}</strong>
         </div>
       </div>
@@ -267,7 +253,10 @@ function KanbanColumn({
 
 export default function TasksBoard({ departments, error, initialTasks, isConfigured, members }: TasksBoardProps) {
   const membersById = new Map(members.map((member) => [member.id, member]));
-  const [tasks, setTasks] = useState<BoardTask[]>(() => initialTasks.map((task) => mapTaskRecord(task, membersById)));
+  const departmentsById = new Map(departments.map((department) => [department.id, department]));
+  const [tasks, setTasks] = useState<BoardTask[]>(() =>
+    initialTasks.map((task) => mapTaskRecord(task, membersById, departmentsById)),
+  );
   const [selectedDepartmentTab, setSelectedDepartmentTab] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [handoffDraft, setHandoffDraft] = useState<HandoffDraft | null>(null);
@@ -282,13 +271,15 @@ export default function TasksBoard({ departments, error, initialTasks, isConfigu
     }),
     useSensor(KeyboardSensor),
   );
+  const departmentTabs = getDepartmentTabs(departments);
   const selectedDepartment = departmentTabs.find((tab) => tab.id === selectedDepartmentTab) ?? departmentTabs[0];
-  const selectedDepartmentId = getDepartmentIdForTab(selectedDepartment, departments);
+  const selectedDepartmentId = selectedDepartment.departmentId;
   const filteredTasks =
     selectedDepartmentId === "all" ? tasks : tasks.filter((task) => task.departmentId === selectedDepartmentId);
 
   function openTaskForm() {
-    setDraft(emptyDraft);
+    const defaultDepartmentId = selectedDepartmentId !== "all" && selectedDepartmentId !== undefined ? String(selectedDepartmentId) : "";
+    setDraft({ ...emptyDraft, departmentId: defaultDepartmentId });
     setMessage("");
     setIsFormOpen(true);
   }
@@ -314,7 +305,7 @@ export default function TasksBoard({ departments, error, initialTasks, isConfigu
       const createdTask = result.task;
 
       if (createdTask) {
-        setTasks((currentTasks) => [mapTaskRecord(createdTask, membersById), ...currentTasks]);
+        setTasks((currentTasks) => [mapTaskRecord(createdTask, membersById, departmentsById), ...currentTasks]);
       }
 
       closeTaskForm();
@@ -407,15 +398,12 @@ export default function TasksBoard({ departments, error, initialTasks, isConfigu
 
       <div className={styles.departmentTabs} aria-label="Filter tasks by department" role="tablist">
         {departmentTabs.map((tab) => {
-          const departmentId = getDepartmentIdForTab(tab, departments);
-          const isDisabled = departmentId === undefined;
           const isActive = selectedDepartmentTab === tab.id;
 
           return (
             <button
               aria-selected={isActive}
               className={isActive ? styles.activeDepartmentTab : ""}
-              disabled={isDisabled}
               key={tab.id}
               onClick={() => setSelectedDepartmentTab(tab.id)}
               role="tab"
@@ -475,38 +463,38 @@ export default function TasksBoard({ departments, error, initialTasks, isConfigu
                   <option value="high">High</option>
                 </select>
               </label>
-              <label>
-                Assigned team member
-                <select
-                  value={draft.assignedTo}
-                  onChange={(event) => setDraft({ ...draft, assignedTo: event.target.value })}
-                  required
-                  disabled={isPending || members.length === 0}
-                >
-                  <option value="">Choose a person</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {getMemberLabel(member)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Department
-                <select
-                  value={draft.departmentId}
-                  onChange={(event) => setDraft({ ...draft, departmentId: event.target.value })}
-                  required
-                  disabled={isPending || departments.length === 0}
-                >
-                  <option value="">Choose a department</option>
-                  {departments.map((department) => (
-                    <option key={department.id} value={department.id}>
-                      {department.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+	              <label>
+	                Department
+	                <select
+	                  value={draft.departmentId}
+	                  onChange={(event) => setDraft({ ...draft, assignedTo: "", departmentId: event.target.value })}
+	                  required
+	                  disabled={isPending || departments.length === 0}
+	                >
+	                  <option value="">Choose a department</option>
+	                  {departments.map((department) => (
+	                    <option key={department.id} value={department.id}>
+	                      {department.name}
+	                    </option>
+	                  ))}
+	                </select>
+	              </label>
+	              <label>
+	                Assigned team member
+	                <select
+	                  value={draft.assignedTo}
+	                  onChange={(event) => setDraft({ ...draft, assignedTo: event.target.value })}
+	                  required
+	                  disabled={isPending}
+	                >
+	                  <option value="">Choose a person</option>
+	                  {members.map((member) => (
+	                    <option key={member.id} value={member.id}>
+	                      {getMemberLabel(member)}
+	                    </option>
+	                  ))}
+	                </select>
+	              </label>
               <label>
                 Client ID
                 <input
@@ -586,7 +574,13 @@ export default function TasksBoard({ departments, error, initialTasks, isConfigu
             ) : null}
 
             <div className={styles.cardActions}>
-              <button type="submit" disabled={isPending || getMembersForStatus(members, handoffDraft.nextStatus).length === 0}>
+              <button
+                type="submit"
+                disabled={
+                  isPending ||
+                  getMembersForStatus(members, handoffDraft.nextStatus).length === 0
+                }
+              >
                 {isPending ? "Moving..." : "Move task"}
               </button>
               <button type="button" onClick={closeHandoffForm} disabled={isPending}>

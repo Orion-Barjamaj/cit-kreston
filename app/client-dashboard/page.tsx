@@ -38,7 +38,7 @@ type DocumentRecord = {
 type NoteRecord = {
   id: number;
   text: string;
-  uploaded_by: string | null;
+  uploaded_by: number | null;
   created_at: string | null;
 };
 
@@ -48,7 +48,76 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
   year: "numeric",
 });
 
-const progressAreas = ["Payroll Processing", "Audit Review", "Tax Documents", "Contract Review"];
+const progressAreas = [
+  "Payroll Processing",
+  "Audit Review",
+  "Tax Documents",
+  "Contract Review",
+];
+const demoTasks: TaskRecord[] = [
+  {
+    id: -1,
+    title: "Payroll Processing",
+    status: "in-progress",
+    priority: "medium",
+    deadline: "2026-06-03T00:00:00",
+  },
+  {
+    id: -2,
+    title: "Audit Review",
+    status: "review",
+    priority: "high",
+    deadline: "2026-06-07T00:00:00",
+  },
+  {
+    id: -3,
+    title: "Tax Documents",
+    status: "todo",
+    priority: "medium",
+    deadline: "2026-06-12T00:00:00",
+  },
+  {
+    id: -4,
+    title: "Contract Review",
+    status: "completed",
+    priority: "low",
+    deadline: "2026-05-29T00:00:00",
+  },
+];
+const demoDocuments: DocumentRecord[] = [
+  {
+    id: -1,
+    file_name: "Payroll checklist.pdf",
+    file_url: null,
+    type: "payroll",
+    created_at: "2026-05-20T00:00:00",
+    summary:
+      "Payroll checklist prepared for the next monthly processing cycle.",
+  },
+  {
+    id: -2,
+    file_name: "Audit request list.docx",
+    file_url: null,
+    type: "audit",
+    created_at: "2026-05-18T00:00:00",
+    summary:
+      "Open audit request list with pending review items and document owners.",
+  },
+];
+const demoNotes: NoteRecord[] = [
+  {
+    id: -1,
+    text: "Please confirm whether the latest payroll additions are complete.",
+    uploaded_by: null,
+    created_at: "2026-05-21T00:00:00",
+  },
+  {
+    id: -2,
+    text: "Client: Tax document upload received and queued for review.",
+    uploaded_by: null,
+    created_at: "2026-05-19T00:00:00",
+  },
+];
 
 function formatDate(value: string | null) {
   if (!value) {
@@ -68,9 +137,24 @@ function isDone(status: string | null) {
   return ["done", "completed"].includes((status ?? "").toLowerCase());
 }
 
+function isClientNote(note: NoteRecord) {
+  const normalizedText = note.text.toLowerCase();
+
+  return (
+    normalizedText.startsWith("client:") ||
+    normalizedText.startsWith("client uploaded")
+  );
+}
+
+function displayNoteText(note: NoteRecord) {
+  return isClientNote(note) ? note.text.replace(/^client:\s*/i, "") : note.text;
+}
+
 function getProgressStatus(area: string, tasks: TaskRecord[]) {
   const areaWord = area.split(" ")[0].toLowerCase();
-  const matchingTasks = tasks.filter((task) => task.title.toLowerCase().includes(areaWord));
+  const matchingTasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(areaWord),
+  );
 
   if (matchingTasks.length === 0) {
     return "Not started";
@@ -80,7 +164,9 @@ function getProgressStatus(area: string, tasks: TaskRecord[]) {
     return "Completed";
   }
 
-  if (matchingTasks.some((task) => (task.status ?? "").toLowerCase() === "review")) {
+  if (
+    matchingTasks.some((task) => (task.status ?? "").toLowerCase() === "review")
+  ) {
     return "In review";
   }
 
@@ -98,20 +184,39 @@ function getUpcomingEvents(tasks: TaskRecord[]) {
     .slice(0, 4);
 }
 
-function getAiInsights(tasks: TaskRecord[], documents: DocumentRecord[], notes: NoteRecord[]) {
+function getAiInsights(
+  tasks: TaskRecord[],
+  documents: DocumentRecord[],
+  notes: NoteRecord[],
+) {
   const overdueTasks = tasks.filter((task) => {
     const deadline = task.deadline ? new Date(task.deadline) : null;
 
-    return deadline && !Number.isNaN(deadline.getTime()) && deadline < new Date() && !isDone(task.status);
+    return (
+      deadline &&
+      !Number.isNaN(deadline.getTime()) &&
+      deadline < new Date() &&
+      !isDone(task.status)
+    );
   }).length;
-  const reviewTasks = tasks.filter((task) => (task.status ?? "").toLowerCase() === "review").length;
+  const reviewTasks = tasks.filter(
+    (task) => (task.status ?? "").toLowerCase() === "review",
+  ).length;
 
   return [
     `${tasks.filter((task) => !isDone(task.status)).length} active task${tasks.length === 1 ? "" : "s"}`,
-    overdueTasks > 0 ? `${overdueTasks} overdue deadline${overdueTasks === 1 ? "" : "s"}` : "No overdue deadlines",
-    reviewTasks > 0 ? `${reviewTasks} item${reviewTasks === 1 ? "" : "s"} waiting review` : "No reviews waiting",
-    documents.length > 0 ? `${documents.length} document${documents.length === 1 ? "" : "s"} available` : "No documents shared yet",
-    notes.filter((note) => note.uploaded_by === "Client").length > 0 ? "Your latest notes were sent to the team" : "No client questions sent yet",
+    overdueTasks > 0
+      ? `${overdueTasks} overdue deadline${overdueTasks === 1 ? "" : "s"}`
+      : "No overdue deadlines",
+    reviewTasks > 0
+      ? `${reviewTasks} item${reviewTasks === 1 ? "" : "s"} waiting review`
+      : "No reviews waiting",
+    documents.length > 0
+      ? `${documents.length} document${documents.length === 1 ? "" : "s"} available`
+      : "No documents shared yet",
+    notes.some(isClientNote)
+      ? "Your latest notes were sent to the team"
+      : "No client questions sent yet",
   ];
 }
 
@@ -137,7 +242,9 @@ async function getDashboardData() {
     .select("id, name, industry, status, assigned_manager_id")
     .order("created_at", { ascending: false });
   const client =
-    ((clients ?? []) as ClientRecord[]).find((item) => (item.status ?? "active").toLowerCase() === "active") ??
+    ((clients ?? []) as ClientRecord[]).find(
+      (item) => (item.status ?? "active").toLowerCase() === "active",
+    ) ??
     ((clients ?? []) as ClientRecord[])[0] ??
     null;
 
@@ -153,27 +260,32 @@ async function getDashboardData() {
     };
   }
 
-  const [tasksResult, documentsResult, notesResult, managerResult] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("id, title, status, priority, deadline")
-      .eq("client_id", client.id)
-      .order("deadline", { ascending: true }),
-    supabase
-      .from("documents")
-      .select("id, file_name, file_url, type, created_at, summary")
-      .eq("client_id", client.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("notes")
-      .select("id, text, uploaded_by, created_at")
-      .eq("client_id", client.id)
-      .order("created_at", { ascending: false })
-      .limit(8),
-    client.assigned_manager_id
-      ? supabase.from("users").select("id, name, email, role").eq("id", client.assigned_manager_id).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
+  const [tasksResult, documentsResult, notesResult, managerResult] =
+    await Promise.all([
+      supabase
+        .from("tasks")
+        .select("id, title, status, priority, deadline")
+        .eq("client_id", client.id)
+        .order("deadline", { ascending: true }),
+      supabase
+        .from("documents")
+        .select("id, file_name, file_url, type, created_at, summary")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("notes")
+        .select("id, text, uploaded_by, created_at")
+        .eq("client_id", client.id)
+        .order("created_at", { ascending: false })
+        .limit(8),
+      client.assigned_manager_id
+        ? supabase
+            .from("users")
+            .select("id, name, email, role")
+            .eq("id", client.assigned_manager_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
 
   return {
     isConfigured: true,
@@ -182,14 +294,27 @@ async function getDashboardData() {
     tasks: (tasksResult.data ?? []) as TaskRecord[],
     documents: (documentsResult.data ?? []) as DocumentRecord[],
     notes: (notesResult.data ?? []) as NoteRecord[],
-    error: clientError?.message ?? tasksResult.error?.message ?? documentsResult.error?.message ?? notesResult.error?.message ?? managerResult.error?.message,
+    error:
+      clientError?.message ??
+      tasksResult.error?.message ??
+      documentsResult.error?.message ??
+      notesResult.error?.message ??
+      managerResult.error?.message,
   };
 }
 
 export default async function ClientDashboardPage() {
-  const { client, documents, error, isConfigured, manager, notes, tasks } = await getDashboardData();
-  const aiInsights = getAiInsights(tasks, documents, notes);
-  const upcomingEvents = getUpcomingEvents(tasks);
+  const { client, documents, error, isConfigured, manager, notes, tasks } =
+    await getDashboardData();
+  const displayTasks = tasks.length > 0 ? tasks : demoTasks;
+  const displayDocuments = documents.length > 0 ? documents : demoDocuments;
+  const displayNotes = notes.length > 0 ? notes : demoNotes;
+  const aiInsights = getAiInsights(
+    displayTasks,
+    displayDocuments,
+    displayNotes,
+  );
+  const upcomingEvents = getUpcomingEvents(displayTasks);
 
   return (
     <main className={styles.page}>
@@ -198,24 +323,39 @@ export default async function ClientDashboardPage() {
           <div>
             <p className={styles.eyebrow}>Client portal</p>
             <h1>{client?.name ?? "Client Dashboard"}</h1>
-            <p>{client ? `${client.industry ?? "General"} account status: ${client.status ?? "active"}` : "Secure client progress and document view."}</p>
+            <p>
+              {client
+                ? `${client.industry ?? "General"} account status: ${client.status ?? "active"}`
+                : "Secure client progress and document view."}
+            </p>
           </div>
         </header>
 
         {!isConfigured ? (
           <div className={styles.noticeBox}>
-            Add your Supabase URL and publishable key to <code>.env.local</code> to load the client dashboard.
+            Add your Supabase URL and publishable key to <code>.env.local</code>{" "}
+            to load the client dashboard.
           </div>
         ) : null}
 
         {error ? <div className={styles.errorBox}>{error}</div> : null}
 
         <aside className={styles.aiSummary}>
-          <span className={styles.aiSparkle} aria-hidden="true">✦</span>
+          <span className={styles.aiSparkle} aria-hidden="true">
+            ✦
+          </span>
           <div>
             <div className={styles.aiHeader}>
               <h2>AI Summary. Generated automatically by AI.</h2>
-              <span>{aiInsights.length} insights</span>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {aiInsights.length} insights
+              </span>
             </div>
             <ul>
               {aiInsights.map((item) => (
@@ -231,7 +371,7 @@ export default async function ClientDashboardPage() {
               {progressAreas.map((area) => (
                 <article className={styles.progressCard} key={area}>
                   <span>{area}</span>
-                  <strong>{getProgressStatus(area, tasks)}</strong>
+                  <strong>{getProgressStatus(area, displayTasks)}</strong>
                 </article>
               ))}
             </section>
@@ -244,7 +384,10 @@ export default async function ClientDashboardPage() {
                     upcomingEvents.map(({ task, date }) => (
                       <li key={task.id}>
                         <strong>{task.title}</strong>
-                        <span>{formatDate(date.toISOString())} - {formatStatus(task.status)}</span>
+                        <span>
+                          {formatDate(date.toISOString())} -{" "}
+                          {formatStatus(task.status)}
+                        </span>
                       </li>
                     ))
                   ) : (
@@ -258,7 +401,11 @@ export default async function ClientDashboardPage() {
                 <div className={styles.managerBox}>
                   <strong>{manager?.name ?? "Manager not assigned"}</strong>
                   <span>{manager?.role ?? "Kreston manager"}</span>
-                  {manager?.email ? <a href={`mailto:${manager.email}`}>{manager.email}</a> : <span>No email saved</span>}
+                  {manager?.email ? (
+                    <a href={`mailto:${manager.email}`}>{manager.email}</a>
+                  ) : (
+                    <span>No email saved</span>
+                  )}
                 </div>
               </article>
             </section>
@@ -266,16 +413,26 @@ export default async function ClientDashboardPage() {
             <article className={styles.panel}>
               <h2>Documents</h2>
               <ul className={styles.documentList}>
-                {documents.length > 0 ? (
-                  documents.map((document) => (
+                {displayDocuments.length > 0 ? (
+                  displayDocuments.map((document) => (
                     <li key={document.id}>
                       <div>
                         <strong>{document.file_name}</strong>
-                        <span>{document.type ?? "document"} - {formatDate(document.created_at)}</span>
-                        <p>{document.summary?.trim() || "No AI summary saved for this document yet."}</p>
+                        <span>
+                          {document.type ?? "document"} -{" "}
+                          {formatDate(document.created_at)}
+                        </span>
+                        <p>
+                          {document.summary?.trim() ||
+                            "No AI summary saved for this document yet."}
+                        </p>
                       </div>
                       {document.file_url ? (
-                        <a href={document.file_url} rel="noreferrer" target="_blank">
+                        <a
+                          href={document.file_url}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
                           Download
                         </a>
                       ) : (
@@ -299,11 +456,14 @@ export default async function ClientDashboardPage() {
                 <h2>Questions & Follow-ups</h2>
                 <ClientQuestionForm clientId={client.id} />
                 <ul className={styles.noteList}>
-                  {notes.length > 0 ? (
-                    notes.map((note) => (
+                  {displayNotes.length > 0 ? (
+                    displayNotes.map((note) => (
                       <li key={note.id}>
-                        <strong>{note.text}</strong>
-                        <span>{note.uploaded_by ?? "Team"} - {formatDate(note.created_at)}</span>
+                        <strong>{displayNoteText(note)}</strong>
+                        <span>
+                          {isClientNote(note) ? "Client" : "Team"} -{" "}
+                          {formatDate(note.created_at)}
+                        </span>
                       </li>
                     ))
                   ) : (

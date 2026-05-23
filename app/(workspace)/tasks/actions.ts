@@ -237,7 +237,6 @@ export async function updateTaskStatus(
     .from("tasks")
     .update({
       assigned_to: assignedTo,
-      department_id: assignedUser.department_id,
       status,
     })
     .eq("id", taskId);

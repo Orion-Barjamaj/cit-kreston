@@ -4,6 +4,7 @@ import TasksBoard from "./tasks-board";
 import styles from "./tasks.module.css";
 
 export type TaskMemberOption = {
+  department_id: number | null;
   id: number;
   name: string;
   role: string;
@@ -53,7 +54,7 @@ async function getTasks() {
     .from("tasks")
     .select("id, title, description, status, priority, deadline, client_id, assigned_to, department_id, created_by, created_at")
       .order("created_at", { ascending: false }),
-    supabase.from("users").select("id, name, role").order("name"),
+    supabase.from("users").select("id, name, role, department_id").order("name"),
     supabase.from("departments").select("id, name").order("name"),
   ]);
 

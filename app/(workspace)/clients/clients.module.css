@@ -775,7 +775,7 @@
 .summaryPopover {
   position: absolute;
   right: 0;
-  top: 36px;
+  bottom: 36px;
   z-index: 30;
   width: min(360px, 78vw);
   border: 1px solid #edf0f4;

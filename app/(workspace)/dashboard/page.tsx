@@ -8,6 +8,7 @@ type DashboardData = {
   error?: string;
   isConfigured: boolean;
   tasks: TaskRecord[];
+  users: DashboardUserRecord[];
 };
 
 type Metric = {
@@ -18,6 +19,11 @@ type Metric = {
 type WorkloadItem = {
   team: string;
   value: string;
+};
+
+type DashboardUserRecord = {
+  id: number;
+  name: string;
 };
 
 const doneStatuses = new Set(["done", "completed"]);
@@ -37,22 +43,25 @@ async function getDashboardData(): Promise<DashboardData> {
       clients: [],
       isConfigured: false,
       tasks: [],
+      users: [],
     };
   }
 
-  const [clientsResult, tasksResult] = await Promise.all([
+  const [clientsResult, tasksResult, usersResult] = await Promise.all([
     supabase.from("clients").select("id, name, industry, status, assigned_manager_id, created_at"),
     supabase
       .from("tasks")
       .select("id, title, description, status, priority, deadline, client_id, assigned_to, department_id, created_by, created_at")
       .order("created_at", { ascending: false }),
+    supabase.from("users").select("id, name"),
   ]);
 
   return {
     clients: clientsResult.data ?? [],
-    error: clientsResult.error?.message ?? tasksResult.error?.message,
+    error: clientsResult.error?.message ?? tasksResult.error?.message ?? usersResult.error?.message,
     isConfigured: true,
     tasks: tasksResult.data ?? [],
+    users: usersResult.data ?? [],
   };
 }
 
@@ -156,11 +165,12 @@ function getStatusClassName(status: string | null) {
 }
 
 export default async function DashboardPage() {
-  const { clients, error, isConfigured, tasks } = await getDashboardData();
+  const { clients, error, isConfigured, tasks, users } = await getDashboardData();
   const metrics = getMetrics(tasks);
   const recentActivity = getRecentActivity(tasks);
   const workload = getWorkload(tasks);
   const todayLabel = dateFormatter.format(new Date());
+  const userNamesById = new Map(users.map((user) => [user.id, user.name]));
 
   return (
     <section className={styles.pageStack}>
@@ -240,7 +250,7 @@ export default async function DashboardPage() {
             <tbody>
               {tasks.length > 0 ? (
                 tasks.slice(0, 6).map((task) => {
-                  const assignee = task.assigned_to ? `User ${task.assigned_to}` : "Unassigned";
+                  const assignee = task.assigned_to ? userNamesById.get(task.assigned_to) ?? "Unassigned" : "Unassigned";
 
                   return (
                     <tr key={task.id}>

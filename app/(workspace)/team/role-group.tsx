@@ -43,7 +43,7 @@ export default function RoleGroup({ label, members }: RoleGroupProps) {
                   <span className={styles.avatar}>{member.initials}</span>
                   <span>
                     <strong>{member.name}</strong>
-                    <small>{member.role}</small>
+                    <small>{member.role}</small> {" "}
                     {member.email ? <small>{member.email}</small> : null}
                   </span>
                 </div>

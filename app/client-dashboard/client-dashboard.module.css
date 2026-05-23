@@ -61,10 +61,15 @@
 .aiSummary {
   display: grid;
   grid-template-columns: auto 1fr;
-  align-items: start;
+  align-items: center;
   gap: 16px;
   border-color: #e6e8ff;
   background: #f0f2ff;
+}
+
+.aiSummary > div {
+  display: grid;
+  align-content: center;
 }
 
 .noticeBox {
@@ -123,6 +128,7 @@
 }
 
 .aiSparkle {
+  align-self: start;
   color: #6d5dfc;
   font-size: 30px;
   line-height: 1;
@@ -160,10 +166,16 @@
 }
 
 .progressCard {
+  min-height: 118px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
   padding: 16px;
   background: #ffffff;
+  text-align: center;
 }
 
 .progressCard span {
@@ -174,7 +186,6 @@
 
 .progressCard strong {
   display: block;
-  margin-top: 8px;
   color: #111827;
   font-size: 18px;
 }

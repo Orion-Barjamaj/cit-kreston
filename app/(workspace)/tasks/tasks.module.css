@@ -195,7 +195,6 @@
   min-width: 260px;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid #d9dee7;
   border-right: 1px solid #d9dee7;
   border-bottom: 1px solid #d9dee7;
   background: #fbfcfd;
