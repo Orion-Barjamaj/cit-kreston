@@ -6,8 +6,8 @@ import styles from "./clients.module.css";
 import type { ClientRecord } from "@/app/lib/supabase";
 
 type ClientListRecord = ClientRecord & {
-  last_updated_at?: string | null;
-  risk_score?: number;
+  last_updated?: string | null;
+  risk?: number;
 };
 
 type ClientsViewProps = {
@@ -54,8 +54,8 @@ function getSearchText(client: ClientListRecord) {
     client.status ?? "active",
     client.assigned_manager_id,
     client.created_at,
-    client.last_updated_at,
-    client.risk_score,
+    client.last_updated,
+    client.risk,
   ]
     .filter((value) => value !== null && value !== undefined)
     .join(" ")
@@ -118,10 +118,10 @@ function getSortValue(client: ClientListRecord, key: SortKey) {
   }
 
   if (key === "updated") {
-    return new Date(client.last_updated_at ?? client.created_at ?? 0).getTime();
+    return new Date(client.last_updated ?? client.created_at ?? 0).getTime();
   }
 
-  return client.risk_score ?? 9;
+  return client.risk ?? 9;
 }
 
 function compareClients(first: ClientListRecord, second: ClientListRecord, key: SortKey) {
@@ -261,11 +261,11 @@ export default function ClientsView({
                     <td>{formatField(client.assigned_manager_id)}</td>
                     <td>{formatDate(client.created_at)}</td>
                     <td>
-                      {formatDate(client.last_updated_at ?? client.created_at)}
+                      {formatDate(client.last_updated ?? client.created_at)}
                     </td>
                     <td>
-                      <span className={getRiskClassName(client.risk_score)}>
-                        {client.risk_score ?? 9}/10
+                      <span className={getRiskClassName(client.risk)}>
+                        {client.risk ?? 9}/10
                       </span>
                     </td>
                   </tr>

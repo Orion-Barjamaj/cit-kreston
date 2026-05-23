@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/app/lib/supabase";
-import { summarizeFile } from "@/app/lib/summarize";
+import { extractClientFromDocument, summarizeFile } from "@/app/lib/summarize";
 
 export type CreateClientState = {
   message: string;
@@ -426,5 +426,92 @@ export async function createClientTimelineNote(
   return {
     status: "success",
     message: "Timeline note was added.",
+  };
+}
+
+export async function createClientFromContract(
+  _previousState: CreateDocumentState,
+  formData: FormData,
+): Promise<CreateDocumentState> {
+  const supabase = getSupabaseServerClient();
+
+  if (!supabase) {
+    return { status: "error", message: "Supabase is not configured." };
+  }
+
+  const file = getFileValue(formData, "file");
+
+  if (!file) {
+    return { status: "error", message: "Choose a contract file." };
+  }
+
+  const safeFileName = sanitizeFileName(file.name);
+  const storagePath = `contracts/${Date.now()}-${safeFileName}`;
+  const fileBuffer = await file.arrayBuffer();
+
+  // upload to storage
+  const { error: uploadError } = await supabase.storage
+    .from(documentBucketName)
+    .upload(storagePath, fileBuffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    return { status: "error", message: uploadError.message };
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from(documentBucketName)
+    .getPublicUrl(storagePath);
+
+  // extract client data with Gemini
+  const extracted = await extractClientFromDocument(
+    publicUrlData.publicUrl,
+    file.name
+  );
+
+  if (!extracted) {
+    return { status: "error", message: "Could not extract client data from document." };
+  }
+
+  // create the client
+  const { data: newClient, error: clientError } = await supabase
+    .from("clients")
+    .insert({
+      name: extracted.name,
+      industry: extracted.industry,
+      status: "active",
+      risk: extracted.risk,
+      assigned_manager_id: null,
+    })
+    .select("id")
+    .single();
+
+  if (clientError || !newClient) {
+    return { status: "error", message: clientError?.message ?? "Failed to create client." };
+  }
+
+  // save the contract document linked to the new client
+  const summary = await summarizeFile(publicUrlData.publicUrl, file.name);
+
+  const { error: docError } = await supabase.from("documents").insert({
+    client_id: newClient.id,
+    uploaded_by: null,
+    file_name: file.name,
+    file_url: publicUrlData.publicUrl,
+    type: "contract",
+    summary,
+  });
+
+  if (docError) {
+    return { status: "error", message: docError.message };
+  }
+
+  revalidatePath("/clients");
+
+  return {
+    status: "success",
+    message: `Client "${extracted.name}" created from contract.`,
   };
 }
