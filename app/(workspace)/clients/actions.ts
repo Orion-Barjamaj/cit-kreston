@@ -23,6 +23,7 @@ const validDocumentTypes = new Set([
   "tax",
   "report",
 ]);
+const extractableClientDocumentExtensions = new Set([".pdf", ".docx"]);
 const validActivityTypes = new Set(["comment", "meeting", "update", "alert"]);
 const documentBucketName = "documents";
 
@@ -227,6 +228,12 @@ function getFileValue(formData: FormData, key: string) {
 
 function sanitizeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+function getFileExtension(fileName: string) {
+  const extensionStart = fileName.lastIndexOf(".");
+
+  return extensionStart === -1 ? "" : fileName.slice(extensionStart).toLowerCase();
 }
 
 export async function createClientDocument(
@@ -448,6 +455,10 @@ export async function createClientFromContract(
     return { status: "error", message: "Choose a contract file." };
   }
 
+  if (!extractableClientDocumentExtensions.has(getFileExtension(file.name))) {
+    return { status: "error", message: "Upload a PDF or DOCX contract." };
+  }
+
   const safeFileName = sanitizeFileName(file.name);
   const storagePath = `contracts/${Date.now()}-${safeFileName}`;
   const fileBuffer = await file.arrayBuffer();
@@ -469,27 +480,38 @@ export async function createClientFromContract(
     .getPublicUrl(storagePath);
 
   // extract client data with Gemini
-  const extracted = await extractClientFromDocument(
-    publicUrlData.publicUrl,
-    file.name
-  );
+const extracted = await extractClientFromDocument(publicUrlData.publicUrl, file.name);
 
-  if (!extracted) {
-    return { status: "error", message: "Could not extract client data from document." };
-  }
+if (!extracted) {
+  return { status: "error", message: "Could not extract client data from document." };
+}
 
-  // create the client
-  const { data: newClient, error: clientError } = await supabase
-    .from("clients")
-    .insert({
-      name: extracted.name,
-      industry: extracted.industry,
-      status: "active",
-      risk: extracted.risk,
-      assigned_manager_id: null,
-    })
+// look up manager by name if one was found in the document
+let managerId: number | null = null;
+
+if (extracted.assigned_manager) {
+  const { data: manager } = await supabase
+    .from("users")
     .select("id")
+    .ilike("name", `%${extracted.assigned_manager}%`) // ilike = case-insensitive partial match
     .single();
+
+  if (manager) {
+    managerId = manager.id;
+  }
+}
+
+const { data: newClient, error: clientError } = await supabase
+  .from("clients")
+  .insert({
+    name: extracted.name,
+    industry: extracted.industry,
+    status: "active",
+    risk: extracted.risk,
+    assigned_manager_id: managerId, // null if no match found
+  })
+  .select("id")
+  .single();
 
   if (clientError || !newClient) {
     return { status: "error", message: clientError?.message ?? "Failed to create client." };

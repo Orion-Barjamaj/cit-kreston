@@ -136,6 +136,36 @@
   background: #ffffff;
 }
 
+.clientCreateGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.32fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.clientCreateGrid .addClientForm {
+  min-width: 0;
+}
+
+.importClientForm {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.importClientActions {
+  display: grid;
+  gap: 8px;
+}
+
+.importClientActions .secondaryButton {
+  width: 100%;
+  min-height: 36px;
+}
+
 .addClientForm > div:first-child {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -810,6 +840,10 @@
 @media (max-width: 980px) {
   .clientDetailHeader {
     flex-direction: column;
+  }
+
+  .clientCreateGrid {
+    grid-template-columns: 1fr;
   }
 
   .addClientForm > div:first-child {

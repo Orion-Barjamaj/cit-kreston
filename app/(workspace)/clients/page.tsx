@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import styles from "./clients.module.css";
 import AddClientForm, { type ClientManagerOption } from "./add-client-form";
 import ClientsView from "./clients-view";
+import ImportClientContractForm from "./import-client-contract-form";
 import { ClientRecord, getSupabaseServerClient } from "@/app/lib/supabase";
 
 type ClientListRecord = ClientRecord & {
@@ -134,7 +135,10 @@ export default async function ClientsPage() {
         </div>
       </div>
 
-      <AddClientForm isConfigured={isConfigured} managers={managers} />
+      <div className={styles.clientCreateGrid}>
+        <AddClientForm isConfigured={isConfigured} managers={managers} />
+        <ImportClientContractForm isConfigured={isConfigured} />
+      </div>
 
       <ClientsView clients={clients} error={error} isConfigured={isConfigured} />
     </section>
